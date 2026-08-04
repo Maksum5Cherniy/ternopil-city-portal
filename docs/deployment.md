@@ -16,6 +16,30 @@
 - `ADMIN_EMAILS`
 - `RESEND_API_KEY`
 - `EMAIL_FROM`
+- `RESEND_EMAIL_DOMAIN`
+
+## Resend email
+
+Resend Marketplace integration for this project:
+
+```bash
+npx vercel integration add resend --name ternopil-city-portal-email --plan free -m domain=de-ternopil.ua -m region=eu-west-1 -e production -e preview -e development --scope de-te --json
+```
+
+Current sender:
+
+```bash
+EMAIL_FROM="Де Тернопіль <noreply@de-ternopil.ua>"
+RESEND_EMAIL_DOMAIN=de-ternopil.ua
+```
+
+DNS records required for `de-ternopil.ua`:
+
+| Type | Name                | Value                                                                                                                                                                                                                        | Priority |
+| ---- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| TXT  | `resend._domainkey` | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4XJSNrgfTgxR+LHKlJVI9BSp7Zx/wn/lV4odtg1NaS9CfjSxBiNmZkG8X8CvdA7NbWMCWHAl1o45e9FneVSC1Wb73XGrthr6lK8FN2Cr6/EyM3RwAVDhHgw5dnW9eV57ufn5o6sIeR06x7xHbf7DpElmNq1FjfhyvGpvIIEAENQIDAQAB` |          |
+| MX   | `send`              | `feedback-smtp.eu-west-1.amazonses.com`                                                                                                                                                                                      | `10`     |
+| TXT  | `send`              | `v=spf1 include:amazonses.com ~all`                                                                                                                                                                                          |          |
 
 Без `DATABASE_URL` сторінка `/admin` залишається закритою і показує повідомлення про відсутню базу даних. Публічні сторінки все одно збираються та відкриваються зі static seed data.
 

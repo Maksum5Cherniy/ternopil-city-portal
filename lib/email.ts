@@ -42,6 +42,17 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#039;");
 }
 
+function getEmailFrom() {
+  const configuredFrom = process.env.EMAIL_FROM;
+  const resendDomain = process.env.RESEND_EMAIL_DOMAIN?.trim();
+
+  if (resendDomain && (!configuredFrom || configuredFrom.includes("onboarding@resend.dev"))) {
+    return `${SITE.title} <noreply@${resendDomain}>`;
+  }
+
+  return configuredFrom || `${SITE.title} <onboarding@resend.dev>`;
+}
+
 export function getEmailVerificationUrl(token: string) {
   return `${getBaseUrl()}/verify-email?token=${encodeURIComponent(token)}`;
 }
@@ -59,7 +70,7 @@ export async function sendEmailVerification(input: {
     return { sent: false, reason: "provider-missing" };
   }
 
-  const from = process.env.EMAIL_FROM || `${SITE.title} <onboarding@resend.dev>`;
+  const from = getEmailFrom();
   const safeName = escapeHtml(input.displayName);
   const safeUrl = escapeHtml(verificationUrl);
 

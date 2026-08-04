@@ -40,6 +40,10 @@ dev-server.log
 # vercel
 .vercel
 
+# marketplace integration helper files
+.agents/
+skills-lock.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

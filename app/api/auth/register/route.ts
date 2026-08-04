@@ -55,15 +55,18 @@ export async function POST(request: Request) {
       displayName: user.display_name,
       token: verificationToken,
     });
+    const emailMessage = emailResult.sent
+      ? "Профіль створено. Перевірте пошту і підтвердьте email."
+      : emailResult.reason === "send-failed"
+        ? "Профіль створено, але лист підтвердження не відправлено: домен email-відправника ще не підтверджений у Resend."
+        : "Профіль створено, але email-провайдер ще не налаштований.";
     const token = await createServerSession(user.id);
     const response = NextResponse.json(
       {
         ok: true,
         emailSent: emailResult.sent,
         user: toPublicUser(userWithEnvRoles),
-        message: emailResult.sent
-          ? "Профіль створено. Перевірте пошту і підтвердьте email."
-          : "Профіль створено, але email-провайдер ще не налаштований.",
+        message: emailMessage,
       },
       { status: 201 },
     );
