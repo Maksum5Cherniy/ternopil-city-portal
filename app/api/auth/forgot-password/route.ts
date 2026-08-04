@@ -5,16 +5,6 @@ import { loginSchema } from "@/schemas/auth";
 
 export const runtime = "nodejs";
 
-const acceptedMessage =
-  "Якщо профіль існує, ми надіслали лист із посиланням для відновлення пароля.";
-
-function acceptedResponse() {
-  return NextResponse.json({
-    ok: true,
-    message: acceptedMessage,
-  });
-}
-
 export async function POST(request: Request) {
   if (!isDatabaseConfigured()) {
     return NextResponse.json(
@@ -39,16 +29,42 @@ export async function POST(request: Request) {
 
   const user = await getUserByEmail(parsed.data.email);
 
-  if (!user || user.is_blocked) {
-    return acceptedResponse();
+  if (!user) {
+    return NextResponse.json(
+      {
+        error: "Цей email не зареєстрований. Перевірте адресу або створіть профіль.",
+        field: "email",
+      },
+      { status: 404 },
+    );
+  }
+
+  if (user.is_blocked) {
+    return NextResponse.json(
+      { error: "Цей профіль заблокований. Зверніться до адміністратора." },
+      { status: 403 },
+    );
   }
 
   const token = await createPasswordResetToken(user.id);
-  await sendPasswordResetEmail({
+  const emailResult = await sendPasswordResetEmail({
     email: user.email,
     displayName: user.display_name,
     token,
   });
 
-  return acceptedResponse();
+  if (!emailResult.sent) {
+    const message =
+      emailResult.reason === "send-failed"
+        ? "Лист відновлення не відправлено. Спробуйте ще раз або зверніться до адміністратора."
+        : "Поштовий сервіс ще не налаштований. Лист відновлення не відправлено.";
+
+    return NextResponse.json({ error: message }, { status: 503 });
+  }
+
+  return NextResponse.json({
+    ok: true,
+    emailSent: true,
+    message: "Ми надіслали лист із посиланням для відновлення пароля.",
+  });
 }

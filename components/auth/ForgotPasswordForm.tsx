@@ -5,7 +5,11 @@ import { useForm } from "react-hook-form";
 import { loginSchema, type LoginInput } from "@/schemas/auth";
 
 async function readResponse(response: Response) {
-  return (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
+  return (await response.json().catch(() => null)) as {
+    error?: string;
+    field?: string;
+    message?: string;
+  } | null;
 }
 
 export default function ForgotPasswordForm() {
@@ -39,6 +43,10 @@ export default function ForgotPasswordForm() {
       const body = await readResponse(response);
 
       if (!response.ok) {
+        if (body?.field === "email") {
+          setError("email", { message: body.error });
+        }
+
         throw new Error(body?.error || "Не вдалося прийняти запит.");
       }
 

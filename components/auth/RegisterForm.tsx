@@ -10,9 +10,15 @@ import { uk } from "@/config/dictionaries/uk";
 type RegisterFormValues = RegisterInput;
 
 async function readError(response: Response, fallback: string) {
-  const body = (await response.json().catch(() => null)) as { error?: string } | null;
+  const body = (await response.json().catch(() => null)) as {
+    error?: string;
+    field?: string;
+  } | null;
 
-  return body?.error || fallback;
+  return {
+    message: body?.error || fallback,
+    field: body?.field,
+  };
 }
 
 export default function RegisterForm() {
@@ -60,7 +66,13 @@ export default function RegisterForm() {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося створити профіль."));
+        const apiError = await readError(response, "Не вдалося створити профіль.");
+
+        if (apiError.field === "email") {
+          setError("email", { message: apiError.message });
+        }
+
+        throw new Error(apiError.message);
       }
 
       const body = (await response.json()) as { message?: string };

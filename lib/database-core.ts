@@ -760,9 +760,8 @@ export async function createEmailVerificationToken(userId: string) {
 
   await getSql().query(
     `
-      UPDATE email_verification_tokens
-      SET consumed_at = NOW()
-      WHERE user_id = $1 AND consumed_at IS NULL
+      DELETE FROM email_verification_tokens
+      WHERE user_id = $1 AND expires_at <= NOW()
     `,
     [userId],
   );
@@ -809,9 +808,8 @@ export async function verifyEmailToken(token: string) {
   const tokenRows = (await getSql().query(
     `
       UPDATE email_verification_tokens
-      SET consumed_at = NOW()
+      SET consumed_at = COALESCE(consumed_at, NOW())
       WHERE token_hash = $1
-        AND consumed_at IS NULL
         AND expires_at > NOW()
       RETURNING user_id
     `,
@@ -821,7 +819,20 @@ export async function verifyEmailToken(token: string) {
   const userId = tokenRows[0]?.user_id;
 
   if (!userId) {
-    return null;
+    const verifiedUserRows = (await getSql().query(
+      `
+        SELECT u.*
+        FROM email_verification_tokens t
+        JOIN users u ON u.id = t.user_id
+        WHERE t.token_hash = $1
+          AND u.email_verified = TRUE
+        LIMIT 1
+      `,
+      [tokenHash],
+    )) as DatabaseUserRow[];
+    const verifiedUser = verifiedUserRows[0];
+
+    return verifiedUser ? await syncAdminRoleFromEnv(verifiedUser) : null;
   }
 
   const userRows = (await getSql().query(

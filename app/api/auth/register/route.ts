@@ -4,6 +4,7 @@ import { createServerSession, setSessionCookie } from "@/lib/auth-session";
 import {
   createEmailVerificationToken,
   createUser,
+  getUserByEmail,
   isDatabaseConfigured,
   syncAdminRoleFromEnv,
   toPublicUser,
@@ -41,6 +42,18 @@ export async function POST(request: Request) {
   }
 
   try {
+    const existingUser = await getUserByEmail(parsed.data.email);
+
+    if (existingUser) {
+      return NextResponse.json(
+        {
+          error: "Цей email вже зареєстрований. Увійдіть або відновіть пароль.",
+          field: "email",
+        },
+        { status: 409 },
+      );
+    }
+
     const passwordHash = await hashPassword(parsed.data.password);
     const user = await createUser({
       id: randomUUID(),
@@ -76,7 +89,13 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     if (isUniqueEmailError(error)) {
-      return NextResponse.json({ error: "Цей email вже використовується." }, { status: 409 });
+      return NextResponse.json(
+        {
+          error: "Цей email вже зареєстрований. Увійдіть або відновіть пароль.",
+          field: "email",
+        },
+        { status: 409 },
+      );
     }
 
     return NextResponse.json({ error: "Не вдалося створити профіль." }, { status: 500 });
