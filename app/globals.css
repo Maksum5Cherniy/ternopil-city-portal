@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 @import "../styles/tokens.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -82,6 +83,66 @@ select {
 ::selection {
   background: var(--primary-soft);
   color: var(--foreground);
+}
+
+.leaflet-container {
+  min-height: 100%;
+  background: var(--surface-subtle);
+  color: var(--foreground);
+  font: inherit;
+}
+
+.leaflet-control-attribution,
+.leaflet-control-zoom a,
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--surface);
+  color: var(--foreground);
+}
+
+.leaflet-popup-content {
+  margin: 12px;
+  color: var(--foreground);
+}
+
+.leaflet-popup-content p {
+  margin: 0;
+}
+
+.city-map-marker-wrap {
+  background: transparent;
+  border: 0;
+}
+
+.city-map-marker {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 10px 30px rgb(13 27 61 / 28%);
+}
+
+.city-map-marker-active {
+  width: 24px;
+  height: 24px;
+  border-width: 4px;
+}
+
+.city-map-marker-place {
+  background: var(--primary);
+}
+
+.city-map-marker-location {
+  background: var(--success);
+}
+
+.city-map-marker-event {
+  background: var(--accent);
+}
+
+.city-map-marker-service {
+  background: var(--info);
 }
 
 @media (prefers-reduced-motion: reduce) {

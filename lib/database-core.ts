@@ -260,6 +260,8 @@ type ListingCardRow = {
   description: string;
   price: string;
   currency: string;
+  category_id: string;
+  condition: string;
   district: string | null;
   status: string;
   created_at: string;
@@ -273,7 +275,7 @@ const defaultSiteSettings: SiteSettingSummary[] = [
     key: "site_description",
     value: "Міський інформаційний портал Тернополя.",
   },
-  { key: "contact_email", value: "hello@deternopil.pp.ua" },
+  { key: "contact_telegram", value: "@no_name_te" },
   { key: "seo_keywords", value: "Тернопіль, новини, заклади, події, барахолка" },
   { key: "homepage_notice", value: "" },
 ];
@@ -2571,7 +2573,7 @@ export async function getListingCardsFromDatabase(limit = 24): Promise<HomeCard[
 
   const rows = (await getSql().query(
     `
-      SELECT slug, title, description, price, currency, district, status, created_at
+      SELECT slug, title, description, price, currency, category_id, condition, district, status, created_at
       FROM listings
       WHERE status = 'active'
         AND moderation_status = 'approved'
@@ -2588,6 +2590,9 @@ export async function getListingCardsFromDatabase(limit = 24): Promise<HomeCard[
     href: `/market/${listing.slug}`,
     meta: listing.district || "Тернопіль",
     badge: `${Number(listing.price).toLocaleString("uk-UA")} ${listing.currency}`,
+    category: listing.category_id,
+    condition: listing.condition,
+    status: listing.status,
   }));
 }
 
@@ -2604,7 +2609,7 @@ export async function searchListingCardsFromDatabase(
   const searchQuery = sanitizeText(query, 120);
   const rows = (await getSql().query(
     `
-      SELECT slug, title, description, price, currency, district, status, created_at
+      SELECT slug, title, description, price, currency, category_id, condition, district, status, created_at
       FROM listings
       WHERE status = 'active'
         AND moderation_status = 'approved'
@@ -2627,6 +2632,9 @@ export async function searchListingCardsFromDatabase(
     href: `/market/${listing.slug}`,
     meta: listing.district || "Тернопіль",
     badge: `${Number(listing.price).toLocaleString("uk-UA")} ${listing.currency}`,
+    category: listing.category_id,
+    condition: listing.condition,
+    status: listing.status,
   }));
 }
 

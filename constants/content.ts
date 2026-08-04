@@ -13,6 +13,13 @@ export type PortalEntity = HomeCard & {
   };
   date?: string;
   status?: string;
+  sourceUrl?: string;
+  sourceLabel?: string;
+  phone?: string;
+  telegram?: string;
+  instagram?: string;
+  condition?: string;
+  contactPreference?: string;
 };
 
 export const cityStats = [
@@ -59,10 +66,88 @@ export const listingCategories = [
   { slug: "phones", title: "Телефони" },
   { slug: "home", title: "Товари для дому" },
   { slug: "kids", title: "Дитячі товари" },
+  { slug: "transport", title: "Транспорт" },
+  { slug: "clothing", title: "Одяг і взуття" },
+  { slug: "tools", title: "Інструменти" },
   { slug: "free", title: "Безкоштовно" },
 ];
 
 export const newsItems: PortalEntity[] = [
+  {
+    slug: "temperaturnyi-rekord-ternopil-2026",
+    title: "У Тернополі зафіксували температурний рекорд",
+    description:
+      "3 серпня у місті оновили температурний максимум, а синоптики попереджають про спеку на початку тижня.",
+    href: "/news/temperaturnyi-rekord-ternopil-2026",
+    meta: "Погода",
+    badge: "Актуально",
+    category: "misto",
+    date: "2026-08-04",
+    sourceUrl: "https://suspilne.media/ternopil/archive/2026/8/4/",
+    sourceLabel: "Суспільне Тернопіль",
+    content:
+      "За даними регіонального архіву Суспільного, 4 серпня 2026 року повідомили про температурний рекорд у Тернополі за 3 серпня. Картка додана як оперативний міський дайджест: варто стежити за прогнозом, брати воду в дорогу та планувати справи з урахуванням денної спеки.",
+  },
+  {
+    slug: "perevirka-ukryttiv-ternopil-hromada",
+    title: "У громаді перевіряють стан і доступність укриттів",
+    description:
+      "Міська рада повідомила про перевірку укриттів та нагадала про швидкий пошук найближчої захисної споруди.",
+    href: "/news/perevirka-ukryttiv-ternopil-hromada",
+    meta: "Безпека",
+    badge: "Місто",
+    category: "misto",
+    date: "2026-08-04",
+    sourceUrl:
+      "https://ternopilcity.gov.ua/news/u-ternopilskiy-gromadi-tryvaye-perevirka-stanu-i-dostupnosti-ukryttiv-102750.html",
+    sourceLabel: "Тернопільська міська рада",
+    content:
+      "4 серпня 2026 року Тернопільська міська рада повідомила, що у громаді триває перевірка стану і доступності укриттів. У картці порталу зібрано короткий міський контекст: тема належить до безпеки, її варто винести в карту сервісів і регулярно оновлювати після офіційних повідомлень.",
+  },
+  {
+    slug: "knyhoobmin-biblioteky-ternopil-2026",
+    title: "До 10 серпня у бібліотеках приймають книги для книгообміну",
+    description:
+      "У Тернополі збирають книги для всеукраїнського проєкту, сам обмін запланований на 16 серпня.",
+    href: "/news/knyhoobmin-biblioteky-ternopil-2026",
+    meta: "Культура",
+    badge: "Подія",
+    category: "podii",
+    date: "2026-08-04",
+    sourceUrl:
+      "https://ternopilcity.gov.ua/news/do-10-serpnya-v-bibliotekah-ternopolya-pryymayut-knygy-dlya-masshtabnogo-knygoobminu-102753.html",
+    sourceLabel: "Тернопільська міська рада",
+    content:
+      "Міська рада повідомила, що до 10 серпня у бібліотеках Тернополя приймають книги для масштабного книгообміну, який має відбутися 16 серпня. Портал показує це як міську культурну подію з датою, джерелом і коротким описом для швидкого перегляду.",
+  },
+  {
+    slug: "kharchuvannia-shkoliariv-ternopilshchyny",
+    title: "З 1 вересня школярі Тернопільщини харчуватимуться безкоштовно",
+    description:
+      "Суспільне внесло тему безкоштовного харчування школярів до денного архіву новин області.",
+    href: "/news/kharchuvannia-shkoliariv-ternopilshchyny",
+    meta: "Освіта",
+    category: "misto",
+    date: "2026-08-04",
+    sourceUrl: "https://suspilne.media/ternopil/archive/2026/8/4/",
+    sourceLabel: "Суспільне Тернопіль",
+    content:
+      "У новинному архіві Суспільного за 4 серпня 2026 року є повідомлення про безкоштовне харчування школярів Тернопільщини з 1 вересня. На порталі ця тема додана до міського дайджесту як важлива для батьків і освітніх закладів.",
+  },
+  {
+    slug: "afisha-homin-berezil-serpen-2026",
+    title: "Хор «Гомін» у Тернополі: події 4-5 серпня",
+    description:
+      "Афіша Karabas показує концерти хору «Гомін» у палаці культури «Березіль» на початку серпня.",
+    href: "/news/afisha-homin-berezil-serpen-2026",
+    meta: "Афіша",
+    category: "podii",
+    date: "2026-08-04",
+    sourceUrl: "https://ternopil.karabas.com/august/",
+    sourceLabel: "Karabas",
+    content:
+      "За афішею Karabas на серпень 2026 року, у Тернополі заплановані події хору «Гомін» у палаці культури «Березіль». Портал показує це як короткий анонс для розділу подій і переходу до офіційної сторінки продажу квитків.",
+  },
   {
     slug: "miska-afisha-vyhidnyh",
     title: "Міська афіша вихідних",
@@ -221,13 +306,134 @@ export const places: PortalEntity[] = [
     title: "Старий Млин",
     description: "Атмосферний ресторан української кухні з історичним інтер'єром.",
     href: "/places/staryi-mlyn",
+    meta: "Ресторан · 4.6",
+    badge: "Популярне",
+    category: "restaurants",
+    address: "вул. Бродівська, 1-А",
+    rating: 4.6,
+    coordinates: { lat: 49.5598289, lng: 25.5999327 },
+    sourceUrl: "https://www.tripadvisor.co.uk/Restaurants-g681180-Ternopil_Ternopil_Oblast.html",
+    sourceLabel: "Tripadvisor",
+    content:
+      "Старий Млин входить до найпомітніших ресторанів Тернополя у відкритих рейтингах. На порталі картка використовується як приклад повноцінного закладу з адресою, рейтингом, маршрутом на карті, відгуками, заявкою власника і додаванням в обране.",
+  },
+  {
+    slug: "kovcheg",
+    title: "Ковчег",
+    description: "Пивоварна ресторація з європейською та грузинською кухнею.",
+    href: "/places/kovcheg",
+    meta: "Ресторан · 4.6",
+    badge: "Популярне",
+    category: "restaurants",
+    address: "вул. Торговиця, 5-А",
+    rating: 4.6,
+    coordinates: { lat: 49.5478225, lng: 25.5849244 },
+    phone: "+380352519555",
+    instagram: "kovcheg_rest",
+    sourceUrl: "https://www.tripadvisor.co.uk/Restaurants-g681180-Ternopil_Ternopil_Oblast.html",
+    sourceLabel: "Tripadvisor",
+    content:
+      "Ковчег є одним із найвищих у ресторанному рейтингу Тернополя на Tripadvisor. У картці додано адресу, телефон, Instagram, рейтинг, точку на карті та маршрут, щоб користувач міг одразу перейти до дії.",
+  },
+  {
+    slug: "faine-misto-pub",
+    title: "Файне Місто Pub",
+    description: "Великий паб у центрі міста з кухнею, пивом і доставкою.",
+    href: "/places/faine-misto-pub",
+    meta: "Паб · 4.2",
+    badge: "Центр",
+    category: "restaurants",
+    address: "бульв. Тараса Шевченка, 23",
+    rating: 4.2,
+    coordinates: { lat: 49.5528852, lng: 25.5955804 },
+    phone: "+380976001047",
+    instagram: "faine_misto_pub",
+    sourceUrl: "https://fainemisto.com/catalog/faine-misto/",
+    sourceLabel: "Файне Місто",
+    content:
+      "Файне Місто Pub працює у центральній частині Тернополя на бульварі Тараса Шевченка. Картка підготовлена для каталогу закладів із контактами, графіком, посиланням на джерело, маршрутом і можливістю залишити відгук.",
+  },
+  {
+    slug: "na-nebi",
+    title: "Na Nebi",
+    description: "Ресторан на 6 поверсі з кухнею, вином і видом на центр міста.",
+    href: "/places/na-nebi",
+    meta: "Ресторан · 4.4",
+    category: "restaurants",
+    address: "вул. О. Кульчицької, 2-А",
+    rating: 4.4,
+    coordinates: { lat: 49.5522005, lng: 25.5960819 },
+    phone: "+380682117711",
+    instagram: "na.nebi",
+    sourceUrl: "https://nanebi.choiceqr.com/",
+    sourceLabel: "Na Nebi menu",
+    content:
+      "Na Nebi додано як актуальний заклад у центрі Тернополя з відкритою адресою, телефоном, рейтингом і точкою на карті. На сторінці доступні дії для маршруту, обраного і відгуків після модерації.",
+  },
+  {
+    slug: "koza-na-poshti",
+    title: "Коза на Пошті",
+    description: "Бар у просторі Na Пошті з крафтовим пивом і міською атмосферою.",
+    href: "/places/koza-na-poshti",
+    meta: "Бар",
+    category: "restaurants",
+    address: "вул. В'ячеслава Чорновола, 4",
+    rating: 4.0,
+    coordinates: { lat: 49.5530144, lng: 25.5971329 },
+    instagram: "koza.naposhti",
+    sourceUrl: "https://www.instagram.com/koza.naposhti/",
+    sourceLabel: "Instagram",
+    content:
+      "Коза на Пошті додана як актуальний барний формат у центрі. Картка має адресу, Instagram, позначку на карті й підходить для сценарію, коли власник закладу надалі підтверджує сторінку та оновлює дані через модерацію.",
+  },
+  {
+    slug: "river-premium-club",
+    title: "River Premium Club",
+    description: "Ресторан і клубний простір біля Тернопільського ставу.",
+    href: "/places/river-premium-club",
     meta: "Ресторан",
     category: "restaurants",
-    address: "вул. Бродівська, Тернопіль",
-    rating: 4.8,
-    coordinates: { lat: 49.5601, lng: 25.6032 },
+    address: "вул. Чумацька, 1-А",
+    rating: 4.5,
+    coordinates: { lat: 49.5551, lng: 25.5772 },
+    phone: "+380678287777",
+    instagram: "theriver_premium",
+    sourceUrl: "https://the-river.choiceqr.com/menu",
+    sourceLabel: "The River menu",
     content:
-      "Сторінка закладу містить опис, галерею, контакти, графік роботи, меню, відгуки, відповідь власника, кнопку маршруту й можливість додати в обране.",
+      "River Premium Club додано до популярних закладів як локацію біля ставу з відкритими контактами, меню, адресою та точкою на карті. Користувач може перейти до маршруту або зберегти заклад в обране.",
+  },
+  {
+    slug: "oskar-restaurant",
+    title: "Оскар",
+    description: "Ресторан у центральній частині Тернополя на вулиці Крушельницької.",
+    href: "/places/oskar-restaurant",
+    meta: "Ресторан",
+    category: "restaurants",
+    address: "вул. Соломії Крушельницької, 18",
+    rating: 4.4,
+    coordinates: { lat: 49.5574972, lng: 25.5957775 },
+    phone: "+380987975079",
+    sourceUrl:
+      "https://list.in.ua/%D0%A2%D0%B5%D1%80%D0%BD%D0%BE%D0%BF%D1%96%D0%BB%D1%8C/%D0%A0%D0%B5%D1%81%D1%82%D0%BE%D1%80%D0%B0%D0%BD%D0%B8",
+    sourceLabel: "List.in.ua",
+    content:
+      "Оскар додано як ресторан з відкритою адресою і контактами в міському каталозі. Ця картка також використовується на карті для перевірки маршруту, пошуку й фільтрації закладів.",
+  },
+  {
+    slug: "flamingo-ternopil",
+    title: "Flamingo",
+    description: "Італійська кухня та піца у популярному міському форматі.",
+    href: "/places/flamingo-ternopil",
+    meta: "Італійська кухня · 4.3",
+    category: "restaurants",
+    address: "Тернопіль",
+    rating: 4.3,
+    coordinates: { lat: 49.5517, lng: 25.5968 },
+    sourceUrl: "https://www.tripadvisor.co.uk/Restaurants-g681180-Ternopil_Ternopil_Oblast.html",
+    sourceLabel: "Tripadvisor",
+    content:
+      "Flamingo входить до помітних ресторанних позицій у відкритих добірках Тернополя. Для публічного каталогу додано коротку картку, рейтинг, категорію і позначку на міській карті.",
   },
   {
     slug: "teatralna-kava",
@@ -440,6 +646,7 @@ export const events: PortalEntity[] = [
     category: "concerts",
     date: "2026-08-07",
     address: "центр міста",
+    coordinates: { lat: 49.5538, lng: 25.594 },
     price: "250 грн",
     content:
       "Подія має дату, час, організатора, місце, контакт і статус. У майбутньому минулі події автоматично переходитимуть в архів.",
@@ -453,6 +660,7 @@ export const events: PortalEntity[] = [
     category: "workshops",
     date: "2026-08-08",
     address: "Тернопільський став",
+    coordinates: { lat: 49.5535, lng: 25.5878 },
     price: "Безкоштовно",
     content:
       "Фотопрогулянка поєднує міські локації, маршрути і заклади поруч. Події власників закладів проходять модерацію перед публікацією.",
@@ -466,6 +674,7 @@ export const events: PortalEntity[] = [
     category: "children",
     date: "2026-08-09",
     address: "Family Space",
+    coordinates: { lat: 49.5529, lng: 25.5907 },
     price: "180 грн",
     content:
       "Дитяча подія з описом вікової групи, організатором, адресою, контактами і майбутньою прив'язкою до закладу.",
@@ -479,6 +688,7 @@ export const events: PortalEntity[] = [
     category: "sport",
     date: "2026-08-15",
     address: "парк Шевченка",
+    coordinates: { lat: 49.5528, lng: 25.5871 },
     price: "Безкоштовно",
     content:
       "Спортивні події мають фільтри за датою, типом, ціною і локацією. Для безпеки організаторські дані перевіряються модератором.",
@@ -492,6 +702,7 @@ export const events: PortalEntity[] = [
     category: "festivals",
     date: "2026-08-18",
     address: "центр Тернополя",
+    coordinates: { lat: 49.5538, lng: 25.594 },
     price: "Вхід вільний",
     content:
       "Фестиваль локального бізнесу з можливістю додати пов'язані заклади, акції та рекламні блоки.",
@@ -505,6 +716,7 @@ export const events: PortalEntity[] = [
     category: "concerts",
     date: "2026-08-20",
     address: "Театральний майдан",
+    coordinates: { lat: 49.5538, lng: 25.594 },
     price: "від 200 грн",
     content:
       "Подія демонструє сценарій зовнішнього ticket URL без внутрішнього бронювання, як вимагає технічне завдання.",
@@ -518,6 +730,7 @@ export const events: PortalEntity[] = [
     category: "children",
     date: "2026-08-23",
     address: "парк Топільче",
+    coordinates: { lat: 49.5431, lng: 25.5889 },
     price: "Безкоштовно",
     content:
       "Сімейна подія з категорією, адресою, ціною і майбутнім автоматичним архівуванням після дати завершення.",
@@ -531,6 +744,7 @@ export const events: PortalEntity[] = [
     category: "workshops",
     date: "2026-08-25",
     address: "центр міста",
+    coordinates: { lat: 49.5538, lng: 25.594 },
     price: "Реєстрація",
     content:
       "Подія для власників закладів, яка пояснює роботу кабінету, заявки власника, модерації і статистики.",
@@ -544,6 +758,7 @@ export const events: PortalEntity[] = [
     category: "festivals",
     date: "2026-08-28",
     address: "Тернопіль",
+    coordinates: { lat: 49.5535, lng: 25.5948 },
     price: "Донат",
     content:
       "Благодійні події отримують прозорі контакти організатора, опис мети й посилання на зовнішню сторінку збору.",
@@ -557,6 +772,7 @@ export const events: PortalEntity[] = [
     category: "sport",
     date: "2026-08-30",
     address: "старт біля ставу",
+    coordinates: { lat: 49.5535, lng: 25.5878 },
     price: "Безкоштовно",
     content: "Велоподія показує зв'язок подій, карти, локацій і корисних точок на одному порталі.",
   },
@@ -740,7 +956,16 @@ export const listings: PortalEntity[] = [
 ];
 
 export const latestNews = newsItems.slice(0, 3);
-export const popularPlaces = places.slice(0, 3);
+export const popularPlaces = [
+  "staryi-mlyn",
+  "kovcheg",
+  "faine-misto-pub",
+  "na-nebi",
+  "river-premium-club",
+  "koza-na-poshti",
+]
+  .map((slug) => places.find((item) => item.slug === slug))
+  .filter((item): item is PortalEntity => Boolean(item));
 export const popularLocations = locations.slice(0, 3);
 export const upcomingEvents = events.slice(0, 3);
 export const marketHighlights = listings.slice(0, 3);

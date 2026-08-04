@@ -60,7 +60,7 @@ export const adminContentDeleteSchema = z.object({
 export const siteSettingKeySchema = z.enum([
   "site_title",
   "site_description",
-  "contact_email",
+  "contact_telegram",
   "seo_keywords",
   "homepage_notice",
 ]);

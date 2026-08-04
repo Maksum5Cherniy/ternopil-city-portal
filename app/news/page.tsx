@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewsPage() {
   const adminNewsItems = await getPublishedAdminPortalEntities("news");
-  const items = mergePortalEntities(adminNewsItems, newsItems);
+  const items = mergePortalEntities(newsItems, adminNewsItems);
 
   return (
     <ModulePage

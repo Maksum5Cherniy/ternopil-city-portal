@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 const badgeVariants = {
   neutral: "border-border bg-surface-subtle text-muted",
-  primary: "border-primary/30 bg-primary-soft text-primary-strong",
+  primary: "border-primary/30 bg-primary-soft text-primary-strong dark:text-white",
   accent: "border-info/30 bg-info-soft text-info",
   warning: "border-accent/40 bg-accent-soft text-accent-strong",
 } as const;

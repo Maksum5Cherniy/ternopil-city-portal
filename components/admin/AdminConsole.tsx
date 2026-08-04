@@ -76,7 +76,10 @@ const settingLabels: Record<string, { label: string; hint: string; multiline?: b
     hint: "Короткий SEO-опис порталу.",
     multiline: true,
   },
-  contact_email: { label: "Контактний email", hint: "Адреса для зв'язку з адміністрацією." },
+  contact_telegram: {
+    label: "Контактний Telegram",
+    hint: "Основний публічний канал для реклами, партнерства і підтримки.",
+  },
   seo_keywords: { label: "SEO ключові слова", hint: "Список через кому.", multiline: true },
   homepage_notice: {
     label: "Оголошення на головній",

@@ -9,6 +9,7 @@ import {
   Newspaper,
   Plus,
   Search,
+  Send,
   Store,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
@@ -106,8 +107,8 @@ export default async function Home() {
     getPublishedAdminPortalEntities("home", 6),
     getPublishedAdminPortalEntities("ad", 6),
   ]);
-  const homepageNews = mergePortalEntities(adminNewsItems, latestNews).slice(0, 3);
-  const homepagePlaces = mergePortalEntities(adminPlaceItems, popularPlaces).slice(0, 3);
+  const homepageNews = mergePortalEntities(latestNews, adminNewsItems).slice(0, 3);
+  const homepagePlaces = mergePortalEntities(popularPlaces, adminPlaceItems).slice(0, 3);
   const homepageBlocks = adminHomeItems.slice(0, 3);
   const homepageAds = adminAdItems.slice(0, 3);
 
@@ -271,14 +272,52 @@ export default async function Home() {
         </div>
       </section>
 
-      {homepageAds.length > 0 ? (
-        <section className="border-b border-border bg-background py-10 sm:py-14">
-          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8">
-            <SectionHeader title="Реклама" href="/contacts" />
-            <CompactCardList items={homepageAds} />
+      <section className="border-b border-border bg-background py-10 sm:py-14">
+        <div className="mx-auto grid w-full max-w-[1180px] gap-6 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+          <Card className="border-accent/50 bg-surface shadow-[var(--shadow)]">
+            <div className="flex items-start gap-4">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-md bg-accent text-[#0D1B3D]">
+                <Megaphone aria-hidden size={23} />
+              </span>
+              <div>
+                <Badge variant="warning">Реклама</Badge>
+                <h2 className="mt-3 text-2xl font-semibold">Реклама на Де Тернопіль</h2>
+                <p className="mt-3 text-sm leading-6 text-muted">
+                  Розміщення закладів, банерів, промо-блоків, подій і локальних пропозицій для
+                  аудиторії Тернополя.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {["Головна", "Заклади", "Барахолка", "Події"].map((label) => (
+                    <Badge key={label}>{label}</Badge>
+                  ))}
+                </div>
+                <LinkButton
+                  href={SITE.contactTelegramUrl}
+                  variant="accent"
+                  className="mt-5"
+                  leftIcon={<Send aria-hidden size={17} />}
+                >
+                  {SITE.contactTelegram}
+                </LinkButton>
+              </div>
+            </div>
+          </Card>
+
+          <div>
+            <SectionHeader title="Промо-блоки" href="/contacts" />
+            {homepageAds.length > 0 ? (
+              <CompactCardList items={homepageAds} />
+            ) : (
+              <div className="rounded-lg border border-dashed border-border bg-surface-subtle p-6">
+                <p className="text-sm leading-6 text-muted">
+                  Місце для актуальних рекламних пропозицій, партнерських анонсів і промо-матеріалів
+                  після публікації з адмінпанелі.
+                </p>
+              </div>
+            )}
           </div>
-        </section>
-      ) : null}
+        </div>
+      </section>
 
       <section className="bg-background py-10 sm:py-14">
         <div className="mx-auto grid w-full max-w-[1180px] gap-6 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">

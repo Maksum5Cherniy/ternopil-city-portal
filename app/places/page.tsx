@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PlacesPage() {
   const adminPlaceItems = await getPublishedAdminPortalEntities("place");
-  const items = mergePortalEntities(adminPlaceItems, places);
+  const items = mergePortalEntities(places, adminPlaceItems);
 
   return (
     <ModulePage

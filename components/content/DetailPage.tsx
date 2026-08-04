@@ -1,8 +1,22 @@
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, MapPin, Star } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarDays,
+  ExternalLink,
+  MapPin,
+  Navigation,
+  Phone,
+  Send,
+  Star,
+} from "lucide-react";
 import FavoriteButton from "@/components/content/FavoriteButton";
 import { Badge } from "@/components/ui/Badge";
+import { LinkButton } from "@/components/ui/Button";
 import type { PortalEntity } from "@/constants/content";
+
+function cleanHandle(value?: string) {
+  return value?.trim().replace(/^@/, "");
+}
 
 export function DetailPage({
   item,
@@ -17,6 +31,11 @@ export function DetailPage({
   schemaType: "Article" | "LocalBusiness" | "Event" | "Product" | "Place";
   children?: React.ReactNode;
 }) {
+  const telegramHandle = cleanHandle(item.telegram);
+  const instagramHandle = cleanHandle(item.instagram);
+  const routeHref = item.coordinates
+    ? `https://www.google.com/maps/dir/?api=1&destination=${item.coordinates.lat},${item.coordinates.lng}`
+    : undefined;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": schemaType,
@@ -72,11 +91,14 @@ export function DetailPage({
           </div>
         ) : null}
         {item.price ? <div className="font-semibold text-foreground">{item.price}</div> : null}
+        {item.condition ? (
+          <div className="font-semibold text-foreground">{item.condition}</div>
+        ) : null}
       </div>
 
       <div className="mt-8 rounded-lg border border-border bg-surface p-6">
         <h2 className="text-xl font-semibold">Опис</h2>
-        <p className="mt-3 text-base leading-8 text-muted">{item.content}</p>
+        <p className="mt-3 whitespace-pre-line text-base leading-8 text-muted">{item.content}</p>
       </div>
 
       <div className="mt-6 grid gap-4 rounded-lg border border-border bg-surface-subtle p-6 md:grid-cols-2">
@@ -97,6 +119,53 @@ export function DetailPage({
                 badge: item.badge,
               }}
             />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {routeHref ? (
+              <LinkButton
+                href={routeHref}
+                variant="secondary"
+                leftIcon={<Navigation aria-hidden size={17} />}
+              >
+                Маршрут
+              </LinkButton>
+            ) : null}
+            {item.phone ? (
+              <LinkButton
+                href={`tel:${item.phone.replace(/\s+/g, "")}`}
+                variant="secondary"
+                leftIcon={<Phone aria-hidden size={17} />}
+              >
+                Подзвонити
+              </LinkButton>
+            ) : null}
+            {telegramHandle ? (
+              <LinkButton
+                href={`https://t.me/${telegramHandle}`}
+                variant="secondary"
+                leftIcon={<Send aria-hidden size={17} />}
+              >
+                Telegram
+              </LinkButton>
+            ) : null}
+            {instagramHandle ? (
+              <LinkButton
+                href={`https://www.instagram.com/${instagramHandle}/`}
+                variant="secondary"
+                leftIcon={<ExternalLink aria-hidden size={17} />}
+              >
+                Instagram
+              </LinkButton>
+            ) : null}
+            {item.sourceUrl ? (
+              <LinkButton
+                href={item.sourceUrl}
+                variant="subtle"
+                leftIcon={<ExternalLink aria-hidden size={17} />}
+              >
+                {item.sourceLabel || "Джерело"}
+              </LinkButton>
+            ) : null}
           </div>
         </div>
         <div>

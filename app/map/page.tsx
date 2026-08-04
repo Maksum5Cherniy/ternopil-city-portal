@@ -1,44 +1,54 @@
 import type { Metadata } from "next";
-import { MapPinned } from "lucide-react";
+import { MapPinned, Navigation, Search } from "lucide-react";
+import CityMapShell from "@/components/map/CityMapShell";
 import { Badge } from "@/components/ui/Badge";
+import { SITE } from "@/config/site.config";
+import { getCityMapPoints } from "@/lib/map-points";
 
 export const metadata: Metadata = {
   title: "Карта Тернополя",
-  description: "Карта Тернополя з майбутніми шарами закладів, локацій, подій і корисних точок.",
+  description: "Інтерактивна карта Тернополя із закладами, локаціями, подіями й сервісами.",
 };
 
-const mapLayers = ["Заклади", "Локації", "Події", "Аптеки", "Парковки", "Банкомати"];
-
 export default function MapPage() {
+  const points = getCityMapPoints();
+  const placeCount = points.filter((point) => point.type === "place").length;
+  const locationCount = points.filter((point) => point.type === "location").length;
+  const eventCount = points.filter((point) => point.type === "event").length;
+
   return (
     <section className="mx-auto w-full max-w-[1180px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-      <Badge variant="primary">Карта</Badge>
-      <div className="mt-4 grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+      <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
         <div>
-          <h1 className="text-3xl font-semibold tracking-normal sm:text-5xl">Карта Тернополя</h1>
+          <Badge variant="primary">Карта</Badge>
+          <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-5xl">
+            Карта Тернополя
+          </h1>
           <p className="mt-4 text-base leading-8 text-muted sm:text-lg">
-            Корисні точки міста з групуванням за розділами: заклади, локації, події, сервіси та
-            маршрути для швидкої орієнтації.
+            Заклади, локації, події та корисні сервіси з пошуком, фільтрами й швидким маршрутом.
           </p>
-          <div className="mt-6 flex flex-wrap gap-2">
-            {mapLayers.map((layer) => (
-              <Badge key={layer}>{layer}</Badge>
-            ))}
-          </div>
         </div>
-        <div className="overflow-hidden rounded-lg border border-border bg-surface">
-          <div className="relative h-[420px] bg-[linear-gradient(90deg,var(--surface-subtle)_1px,transparent_1px),linear-gradient(var(--surface-subtle)_1px,transparent_1px)] bg-[size:38px_38px]">
-            <div className="absolute left-[25%] top-[28%] grid h-10 w-10 place-items-center rounded-lg bg-primary text-white shadow-[var(--shadow)]">
-              <MapPinned aria-hidden size={20} />
-            </div>
-            <div className="absolute left-[62%] top-[46%] grid h-10 w-10 place-items-center rounded-lg bg-accent text-[#0D1B3D] shadow-[var(--shadow)]">
-              <MapPinned aria-hidden size={20} />
-            </div>
-            <div className="absolute bottom-5 left-5 rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-muted shadow-[var(--shadow)]">
-              Центр Тернополя
-            </div>
-          </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            { label: "закладів", value: placeCount, icon: MapPinned },
+            { label: "локацій", value: locationCount, icon: Navigation },
+            { label: "подій", value: eventCount, icon: Search },
+          ].map((item) => {
+            const Icon = item.icon;
+
+            return (
+              <div key={item.label} className="rounded-lg border border-border bg-surface p-4">
+                <Icon aria-hidden size={18} className="text-primary" />
+                <div className="mt-3 text-2xl font-semibold">{item.value}</div>
+                <div className="text-sm text-muted">{item.label}</div>
+              </div>
+            );
+          })}
         </div>
+      </div>
+
+      <div className="mt-8">
+        <CityMapShell points={points} tileServer={SITE.mapTileServer} />
       </div>
     </section>
   );

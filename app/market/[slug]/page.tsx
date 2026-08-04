@@ -25,6 +25,17 @@ function formatListingPrice(price: number, currency: string) {
   return `${formatted} ${currency}`;
 }
 
+function formatCondition(condition: string) {
+  const labels: Record<string, string> = {
+    new: "Новий",
+    likeNew: "Як новий",
+    used: "Вживаний",
+    needsRepair: "Потребує ремонту",
+  };
+
+  return labels[condition] || condition;
+}
+
 function databaseListingToPortalEntity(item: PublicListingDetail): PortalEntity {
   const categoryTitle =
     listingCategories.find((category) => category.slug === item.categoryId)?.title ||
@@ -47,9 +58,18 @@ function databaseListingToPortalEntity(item: PublicListingDetail): PortalEntity 
     category: item.categoryId,
     price: formatListingPrice(item.price, item.currency),
     status: item.status,
+    condition: formatCondition(item.condition),
+    phone: item.phone,
+    telegram: item.telegram,
+    instagram: item.instagram,
+    contactPreference: item.preferredContact,
     content: contacts
-      ? `${item.description}\n\nПродавець: ${item.authorName}. Контакти: ${contacts}.`
-      : `${item.description}\n\nПродавець: ${item.authorName}.`,
+      ? `${item.description}\n\nПродавець: ${item.authorName}. Стан: ${formatCondition(
+          item.condition,
+        )}. Контакти: ${contacts}.`
+      : `${item.description}\n\nПродавець: ${item.authorName}. Стан: ${formatCondition(
+          item.condition,
+        )}.`,
   };
 }
 

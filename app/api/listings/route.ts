@@ -17,6 +17,19 @@ function slugify(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function normalizeSocialHandle(value?: string) {
+  const trimmed = value?.trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  return trimmed
+    .replace(/^https?:\/\/(www\.)?(t\.me|telegram\.me|instagram\.com)\//i, "")
+    .replace(/\/+$/g, "")
+    .replace(/^@/, "");
+}
+
 export async function POST(request: Request) {
   if (!isDatabaseConfigured()) {
     return NextResponse.json(
@@ -85,9 +98,9 @@ export async function POST(request: Request) {
     categoryId: parsed.data.categoryId,
     condition: parsed.data.condition,
     district: parsed.data.district,
-    phone: parsed.data.phone,
-    telegram: parsed.data.telegram,
-    instagram: parsed.data.instagram,
+    phone: parsed.data.phone?.trim(),
+    telegram: normalizeSocialHandle(parsed.data.telegram),
+    instagram: normalizeSocialHandle(parsed.data.instagram),
     preferredContact: parsed.data.preferredContact,
     expiresAt: new Date(Date.now() + listingLifetimeMs).toISOString(),
   });
