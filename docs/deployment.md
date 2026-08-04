@@ -10,6 +10,27 @@
 6. Додати `ADMIN_EMAILS` для першого адміністратора.
 7. Підключити Resend або додати `RESEND_API_KEY` і `EMAIL_FROM` для підтвердження email.
 
+## Custom domain
+
+Production domain:
+
+```bash
+NEXT_PUBLIC_SITE_URL=https://deternopil.pp.ua
+NEXT_PUBLIC_SITE_DOMAIN_LABEL=deternopil.pp.ua
+```
+
+Domain is added to Vercel project `ternopil-city-portal` as:
+
+- `deternopil.pp.ua`
+- `www.deternopil.pp.ua`
+
+NIC.UA registrar nameservers must be changed from parked nameservers to Vercel:
+
+- `ns1.vercel-dns.com`
+- `ns2.vercel-dns.com`
+
+Vercel DNS already contains the website ALIAS records and Resend email records.
+
 Мінімум для server-side доступу до `/admin`:
 
 - `DATABASE_URL`
@@ -23,21 +44,21 @@
 Resend Marketplace integration for this project:
 
 ```bash
-npx vercel integration add resend --name ternopil-city-portal-email --plan free -m domain=de-ternopil.ua -m region=eu-west-1 -e production -e preview -e development --scope de-te --json
+npx vercel integration add resend --name ternopil-city-portal-email --plan free -m domain=deternopil.pp.ua -m region=eu-west-1 -e production -e preview -e development --scope de-te --json
 ```
 
 Current sender:
 
 ```bash
-EMAIL_FROM="Де Тернопіль <noreply@de-ternopil.ua>"
-RESEND_EMAIL_DOMAIN=de-ternopil.ua
+EMAIL_FROM="Де Тернопіль <noreply@deternopil.pp.ua>"
+RESEND_EMAIL_DOMAIN=deternopil.pp.ua
 ```
 
-DNS records required for `de-ternopil.ua`:
+DNS records required for `deternopil.pp.ua`:
 
 | Type | Name                | Value                                                                                                                                                                                                                        | Priority |
 | ---- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| TXT  | `resend._domainkey` | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC4XJSNrgfTgxR+LHKlJVI9BSp7Zx/wn/lV4odtg1NaS9CfjSxBiNmZkG8X8CvdA7NbWMCWHAl1o45e9FneVSC1Wb73XGrthr6lK8FN2Cr6/EyM3RwAVDhHgw5dnW9eV57ufn5o6sIeR06x7xHbf7DpElmNq1FjfhyvGpvIIEAENQIDAQAB` |          |
+| TXT  | `resend._domainkey` | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDavKjMdEh3OlMyh8sw55sZA++fmQNS6kwvve4+SZuZyngnZg7SBh+DMSya921X9pVyw9lEL84R+Kmye9Yq8Up8wHBQ0USCEt1uIuSma/COqF8xDRV0lFABo33acoiGmvKKQEtcRyaWWEOMrODIhI67+3ZeEYNetZPizGkc0d1T/wIDAQAB` |          |
 | MX   | `send`              | `feedback-smtp.eu-west-1.amazonses.com`                                                                                                                                                                                      | `10`     |
 | TXT  | `send`              | `v=spf1 include:amazonses.com ~all`                                                                                                                                                                                          |          |
 
