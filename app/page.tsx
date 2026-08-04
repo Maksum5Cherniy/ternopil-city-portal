@@ -149,7 +149,7 @@ export default async function Home() {
                 {uk.common.search}
               </label>
               <div className="flex min-h-12 flex-1 items-center gap-2 rounded-md bg-white px-3 text-[#0D1B3D]">
-                <Search aria-hidden size={18} className="shrink-0 text-[#5d6680]" />
+                <Search aria-hidden size={18} className="shrink-0 text-[#000000]" />
                 <input
                   id="home-search"
                   name="q"
