@@ -189,7 +189,7 @@ export default async function Home() {
       </section>
 
       <section className="border-b border-border bg-surface">
-        <div className="mx-auto grid w-full max-w-[1180px] grid-cols-2 gap-px bg-border px-4 sm:grid-cols-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8">
           {cityStats.map((stat) => (
             <div key={stat.label} className="bg-surface px-4 py-5">
               <div className="text-2xl font-semibold text-info">{stat.value}</div>
