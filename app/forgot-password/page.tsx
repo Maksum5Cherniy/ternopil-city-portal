@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
       <div>
         <h1 className="text-3xl font-semibold tracking-normal sm:text-5xl">Відновлення пароля</h1>
         <p className="mt-4 text-base leading-8 text-muted">
-          Вкажіть email профілю, і Firebase Authentication надішле лист для зміни пароля.
+          Вкажіть email профілю, щоб створити запит на відновлення доступу.
         </p>
       </div>
       <div className="rounded-lg border border-border bg-surface p-5 shadow-[var(--shadow)]">

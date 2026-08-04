@@ -1,25 +1,19 @@
-# Архітектура Ternopil City Portal
+# Архітектура Де Тернопіль
 
 ## Аналіз вимог
 
-Проєкт є не сайтом-візиткою, а міським порталом з кількома публічними каталогами,
-рольовими кабінетами, модерацією, realtime-оновленнями там, де вони потрібні, та
-SEO-фундаментом з першого дня. Перший етап має створити не фінальний продукт, а
-стабільну основу для всіх наступних модулів.
+Проєкт є не сайтом-візиткою, а міським порталом з кількома публічними каталогами, рольовими кабінетами, модерацією, SEO-фундаментом і серверною перевіркою доступів. Перший production-шар має стабільно закривати auth/database flow: реєстрація, вхід, профіль, створення оголошення і доступ до `/admin`.
 
 Ключові обмеження:
 
 - основна мова UI: українська;
 - Next.js App Router, TypeScript, Tailwind CSS;
-- Firebase Auth, Firestore, Storage, Admin SDK;
-- реальний час тільки для конкретного користувача, об'єкта або активної черги;
-- без мобільного застосунку, онлайн-бронювання і внутрішнього чату;
-- мінімізація Firebase reads, розміру фото і фонових підписок;
+- Postgres як основне сховище користувацьких даних;
+- Vercel Neon Store як рекомендований production database;
+- реальний час тільки для конкретного користувача, об'єкта або активної черги, коли це буде потрібно;
 - всі важливі записи та зміни проходять серверну валідацію і, де потрібно, модерацію.
 
-## Рекомендована архітектура
-
-### Frontend
+## Frontend
 
 - `app`: маршрути App Router, metadata, error/not-found, sitemap, robots.
 - `components`: layout, UI primitives, content components, theme components.
@@ -27,33 +21,33 @@ SEO-фундаментом з першого дня. Перший етап ма�
 - `config/dictionaries`: UI-тексти для локалізації.
 - `styles`: CSS tokens and Tailwind v4 theme mapping.
 
-Більшість сторінок мають бути Server Components. Client Components використовуються лише
-для інтерактивності: mobile navigation, theme toggle, forms, realtime listeners, map controls.
+Більшість сторінок мають бути Server Components. Client Components використовуються для інтерактивності: mobile navigation, theme toggle, forms, map controls і майбутні live listeners.
 
-### Domain and data
+## Domain and Data
 
 - `types`: shared domain contracts.
 - `schemas`: Zod validation for incoming form/server data.
 - `modules`: domain rules by area.
 - `services`: use-case orchestration.
-- `repositories`: Firestore and Storage wrappers.
-- `firebase`: client/admin initialization only.
+- `repositories`: майбутні database/storage wrappers для складніших модулів.
+- `lib/database.ts`: поточний Postgres data access для auth, profile і listings.
+- `lib/auth-session.ts`: server-side session cookie і role checks.
 
-UI не повинен напряму створювати складні Firestore-запити. Server actions/API routes викликають
-services, services викликають repositories, repositories ізолюють Firebase SDK.
+UI не повинен напряму звертатися до бази. Client forms викликають route handlers, route handlers валідують дані через Zod і виконують mutations через серверні helpers.
 
-### Rendering and caching
+## Rendering and Caching
 
 - Публічні індекси та детальні SEO-сторінки: server rendering або ISR.
-- Кабінети, адмінпанель, черги модерації: dynamic rendering with server role checks.
-- Realtime listeners: тільки для відкритого об'єкта, конкретного користувача або активної черги.
+- Кабінети, адмінпанель, черги модерації: dynamic rendering із server role checks.
 - Популярний публічний контент кешується і пагінується.
+- `/market` читає Postgres, коли `DATABASE_URL` доступний, і падає назад на static seed data без runtime crash.
 
-### Security
+## Security
 
-- Firebase client config містить тільки `NEXT_PUBLIC_*`.
-- Admin SDK використовується тільки на сервері.
-- Ролі перевіряються на сервері через custom claims або `userRoles/{uid}`.
-- Firestore Rules обмежують прямий доступ клієнта, але не замінюють серверні перевірки.
-- Storage Rules перевіряють ownership path, MIME type and file size.
-- Усі важливі дії адміністратора, модератора і власника пишуться в `auditLogs`.
+- Паролі хешуються через Node `scrypt`; plaintext не зберігається.
+- Session token зберігається в браузері тільки як httpOnly cookie.
+- У базі зберігається SHA-256 hash session token, не сам token.
+- Ролі перевіряються на сервері через `users.roles`.
+- API routes повертають контрольований `503`, якщо база не налаштована.
+- Всі write routes проходять Zod validation перед записом.
+- Важливі дії адміністратора, модератора і власника мають писатися в майбутню таблицю `audit_logs`.

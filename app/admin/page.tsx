@@ -70,11 +70,11 @@ export default async function AdminPage() {
     redirect("/login?next=/admin");
   }
 
-  if (session.status === "firebaseAdminMissing") {
+  if (session.status === "databaseMissing") {
     return (
       <AdminAccessDenied
         title="Server-side доступ не налаштований"
-        description="Адмінпанель закрита. Додайте Firebase Admin змінні у Vercel, щоб сервер міг перевіряти session cookie та роль admin."
+        description="Адмінпанель закрита. Підключіть Neon Postgres Store у Vercel, щоб сервер міг перевіряти session cookie та роль admin."
       />
     );
   }
@@ -108,8 +108,8 @@ export default async function AdminPage() {
           <p className="mt-4 max-w-3xl text-base leading-8 text-muted">{uk.admin.description}</p>
         </div>
         <div className="rounded-lg border border-accent/40 bg-accent-soft p-4 text-sm leading-6 text-accent-strong lg:max-w-sm">
-          Доступ підтверджено server-side: session cookie перевірено через Firebase Admin, роль
-          admin прочитано з Firestore.
+          Доступ підтверджено server-side: session cookie перевірено через Postgres, роль admin
+          прочитано з таблиці users.
         </div>
       </div>
 

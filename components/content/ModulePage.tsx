@@ -8,7 +8,7 @@ export function ModulePage({
   title,
   description,
   items,
-  emptyText = "Матеріали з'являться після підключення Firestore.",
+  emptyText = "Матеріали з'являться після підключення бази даних.",
 }: {
   eyebrow: string;
   title: string;

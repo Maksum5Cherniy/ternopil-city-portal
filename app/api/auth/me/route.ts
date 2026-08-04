@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  clearSessionCookie,
-  getCurrentServerSession,
-  revokeCurrentServerSession,
-} from "@/lib/auth-session";
+import { getCurrentServerSession } from "@/lib/auth-session";
 
 export const runtime = "nodejs";
 
@@ -15,13 +11,4 @@ export async function GET() {
   }
 
   return NextResponse.json({ user: session.user });
-}
-
-export async function DELETE() {
-  const response = NextResponse.json({ ok: true });
-
-  await revokeCurrentServerSession();
-  clearSessionCookie(response);
-
-  return response;
 }

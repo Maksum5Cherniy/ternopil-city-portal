@@ -1,63 +1,31 @@
 import "server-only";
 
+import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
-import type { DecodedIdToken } from "firebase-admin/auth";
-import { adminAuth, adminDb, isFirebaseAdminConfigured } from "@/firebase/firebaseAdmin";
+import type { NextResponse } from "next/server";
 import { isAtLeastRole } from "@/lib/access-control";
+import {
+  ensureDatabaseSchema,
+  getSql,
+  isDatabaseConfigured,
+  normalizeRoles,
+  toPublicUser,
+  type PublicUser,
+} from "@/lib/database";
 import type { UserRole } from "@/types";
 
 export const sessionCookieName = "de_ternopil_session";
 export const sessionCookieMaxAgeSeconds = 60 * 60 * 24 * 5;
 
-const validRoles = new Set<UserRole>(["guest", "user", "owner", "moderator", "admin"]);
-
-type ServerUser = {
-  uid: string;
-  email?: string;
-  displayName?: string;
-  roles: UserRole[];
-  isBlocked: boolean;
-};
-
 export type ServerSession =
-  | { status: "authenticated"; user: ServerUser; decodedToken: DecodedIdToken }
+  | { status: "authenticated"; user: PublicUser }
   | { status: "signedOut" }
   | { status: "invalid" }
-  | { status: "firebaseAdminMissing" }
-  | { status: "blocked"; user: ServerUser };
+  | { status: "databaseMissing" }
+  | { status: "blocked"; user: PublicUser };
 
-function normalizeRoles(value: unknown): UserRole[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter((role): role is UserRole => validRoles.has(role as UserRole));
-}
-
-function rolesFromToken(decodedToken: DecodedIdToken): UserRole[] {
-  const tokenWithClaims = decodedToken as DecodedIdToken & {
-    roles?: unknown;
-    role?: unknown;
-    admin?: unknown;
-  };
-  const roles = normalizeRoles(tokenWithClaims.roles);
-
-  if (roles.length > 0) {
-    return roles;
-  }
-
-  if (
-    typeof tokenWithClaims.role === "string" &&
-    validRoles.has(tokenWithClaims.role as UserRole)
-  ) {
-    return [tokenWithClaims.role as UserRole];
-  }
-
-  if (tokenWithClaims.admin === true) {
-    return ["admin"];
-  }
-
-  return [];
+function hashSessionToken(token: string) {
+  return createHash("sha256").update(token).digest("base64url");
 }
 
 export async function getCurrentServerSession(): Promise<ServerSession> {
@@ -68,39 +36,53 @@ export async function getCurrentServerSession(): Promise<ServerSession> {
     return { status: "signedOut" };
   }
 
-  if (!isFirebaseAdminConfigured) {
-    return { status: "firebaseAdminMissing" };
+  if (!isDatabaseConfigured()) {
+    return { status: "databaseMissing" };
   }
 
   try {
-    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
-    const [userSnapshot, roleSnapshot] = await Promise.all([
-      adminDb.collection("users").doc(decodedToken.uid).get(),
-      adminDb.collection("userRoles").doc(decodedToken.uid).get(),
-    ]);
-    const userData = userSnapshot.exists ? userSnapshot.data() : {};
-    const roleData = roleSnapshot.exists ? roleSnapshot.data() : {};
-    const roles = [
-      ...new Set([
-        ...normalizeRoles(userData?.roles),
-        ...normalizeRoles(roleData?.roles),
-        ...rolesFromToken(decodedToken),
-      ]),
-    ];
-    const user: ServerUser = {
-      uid: decodedToken.uid,
-      email: typeof userData?.email === "string" ? userData.email : decodedToken.email,
-      displayName:
-        typeof userData?.displayName === "string" ? userData.displayName : decodedToken.name,
-      roles: roles.length > 0 ? roles : ["user"],
-      isBlocked: userData?.isBlocked === true,
-    };
+    await ensureDatabaseSchema();
+
+    const sql = getSql();
+    const rows = (await sql.query(
+      `
+        SELECT u.*
+        FROM auth_sessions s
+        JOIN users u ON u.id = s.user_id
+        WHERE s.token_hash = $1
+          AND s.expires_at > NOW()
+        LIMIT 1
+      `,
+      [hashSessionToken(sessionCookie)],
+    )) as Array<{
+      id: string;
+      email: string;
+      password_hash: string;
+      display_name: string;
+      phone: string | null;
+      telegram: string | null;
+      instagram: string | null;
+      roles: string[];
+      is_blocked: boolean;
+      profile_completed: boolean;
+      created_at: string;
+      updated_at: string;
+    }>;
+
+    if (!rows[0]) {
+      return { status: "invalid" };
+    }
+
+    const user = toPublicUser({
+      ...rows[0],
+      roles: normalizeRoles(rows[0].roles),
+    });
 
     if (user.isBlocked) {
       return { status: "blocked", user };
     }
 
-    return { status: "authenticated", user, decodedToken };
+    return { status: "authenticated", user };
   } catch {
     return { status: "invalid" };
   }
@@ -108,4 +90,55 @@ export async function getCurrentServerSession(): Promise<ServerSession> {
 
 export function hasServerRole(session: ServerSession, role: UserRole) {
   return session.status === "authenticated" && isAtLeastRole(session.user.roles, role);
+}
+
+export async function createServerSession(userId: string) {
+  await ensureDatabaseSchema();
+
+  const token = randomBytes(32).toString("base64url");
+  const tokenHash = hashSessionToken(token);
+  const expiresAt = new Date(Date.now() + sessionCookieMaxAgeSeconds * 1000).toISOString();
+  const sql = getSql();
+
+  await sql.query("DELETE FROM auth_sessions WHERE expires_at <= NOW()");
+  await sql.query(
+    "INSERT INTO auth_sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)",
+    [tokenHash, userId, expiresAt],
+  );
+
+  return token;
+}
+
+export async function revokeCurrentServerSession() {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get(sessionCookieName)?.value;
+
+  if (!sessionCookie || !isDatabaseConfigured()) {
+    return;
+  }
+
+  await ensureDatabaseSchema();
+  await getSql().query("DELETE FROM auth_sessions WHERE token_hash = $1", [
+    hashSessionToken(sessionCookie),
+  ]);
+}
+
+export function setSessionCookie(response: NextResponse, token: string) {
+  response.cookies.set(sessionCookieName, token, {
+    httpOnly: true,
+    maxAge: sessionCookieMaxAgeSeconds,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
+}
+
+export function clearSessionCookie(response: NextResponse) {
+  response.cookies.set(sessionCookieName, "", {
+    httpOnly: true,
+    maxAge: 0,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
 }

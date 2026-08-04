@@ -3,24 +3,21 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { User } from "firebase/auth";
-import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { Bell, Heart, MessageSquare, PackageCheck, Settings, Store, UserRound } from "lucide-react";
-import { firebaseAuth, firebaseDb, isFirebaseConfigured } from "@/firebase/firebaseClient";
 import { uk } from "@/config/dictionaries/uk";
 import { profileSchema, type ProfileInput } from "@/schemas/auth";
-import { clearSessionCookie } from "./sessionCookie";
+import type { UserRole } from "@/types";
 
-type FirestoreUserProfile = {
-  displayName?: string;
-  email?: string;
+type ProfileUser = {
+  uid: string;
+  email: string;
+  displayName: string;
   phone?: string;
   telegram?: string;
   instagram?: string;
-  roles?: string[];
-  profileCompleted?: boolean;
-  createdAt?: unknown;
+  roles: UserRole[];
+  profileCompleted: boolean;
+  createdAt?: string;
 };
 
 const profileSections = [
@@ -40,48 +37,53 @@ const profileSections = [
   { title: "Налаштування", description: "Профіль, пароль і видалення акаунта.", icon: Settings },
 ];
 
+async function readError(response: Response, fallback: string) {
+  const body = (await response.json().catch(() => null)) as { error?: string } | null;
+
+  return body?.error || fallback;
+}
+
 export default function ProfileClient() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<FirestoreUserProfile | null>(null);
-  const [loading, setLoading] = useState(isFirebaseConfigured);
+  const [user, setUser] = useState<ProfileUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !firebaseAuth || !firebaseDb) {
-      return;
-    }
+    let isMounted = true;
 
-    const auth = firebaseAuth;
-    const db = firebaseDb;
+    fetch("/api/auth/me")
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
 
-    return onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+        return (await response.json()) as { user: ProfileUser };
+      })
+      .then((body) => {
+        if (isMounted) {
+          setUser(body?.user || null);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
 
-      if (!currentUser) {
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-
-      getDoc(doc(db, "users", currentUser.uid))
-        .then((snapshot) => {
-          setProfile(snapshot.exists() ? snapshot.data() : null);
-        })
-        .finally(() => setLoading(false));
-    });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const saveProfile = async (formData: FormData) => {
     setMessage("");
 
-    if (!firebaseAuth || !firebaseDb || !user) {
+    if (!user) {
       setMessage("Потрібно увійти в акаунт.");
       return;
     }
-
-    const db = firebaseDb;
 
     const rawInput: ProfileInput = {
       displayName: String(formData.get("displayName") || ""),
@@ -99,23 +101,19 @@ export default function ProfileClient() {
     setSaving(true);
 
     try {
-      await updateProfile(user, {
-        displayName: parsed.data.displayName,
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
       });
-      await setDoc(
-        doc(db, "users", user.uid),
-        {
-          ...parsed.data,
-          email: user.email,
-          roles: profile?.roles || ["user"],
-          isBlocked: false,
-          profileCompleted: true,
-          updatedAt: serverTimestamp(),
-          createdAt: profile?.createdAt || serverTimestamp(),
-        },
-        { merge: true },
-      );
-      setProfile((current) => ({ ...current, ...parsed.data, profileCompleted: true }));
+
+      if (!response.ok) {
+        throw new Error(await readError(response, "Не вдалося оновити профіль."));
+      }
+
+      const body = (await response.json()) as { user: ProfileUser };
+
+      setUser(body.user);
       setMessage("Профіль оновлено.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Не вдалося оновити профіль.");
@@ -123,14 +121,6 @@ export default function ProfileClient() {
       setSaving(false);
     }
   };
-
-  if (!isFirebaseConfigured) {
-    return (
-      <div className="rounded-lg border border-accent/40 bg-accent-soft p-5 text-sm leading-6 text-accent-strong">
-        {uk.auth.firebaseMissing}
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -192,7 +182,7 @@ export default function ProfileClient() {
               id="displayName"
               name="displayName"
               type="text"
-              defaultValue={profile?.displayName || user.displayName || ""}
+              defaultValue={user.displayName}
               className="mt-2 min-h-12 w-full rounded-md border border-border bg-surface px-3 text-sm outline-none transition focus:border-primary"
             />
           </div>
@@ -204,7 +194,7 @@ export default function ProfileClient() {
               id="phone"
               name="phone"
               type="tel"
-              defaultValue={profile?.phone || ""}
+              defaultValue={user.phone || ""}
               className="mt-2 min-h-12 w-full rounded-md border border-border bg-surface px-3 text-sm outline-none transition focus:border-primary"
             />
           </div>
@@ -217,7 +207,7 @@ export default function ProfileClient() {
                 id="telegram"
                 name="telegram"
                 type="text"
-                defaultValue={profile?.telegram || ""}
+                defaultValue={user.telegram || ""}
                 className="mt-2 min-h-12 w-full rounded-md border border-border bg-surface px-3 text-sm outline-none transition focus:border-primary"
               />
             </div>
@@ -229,7 +219,7 @@ export default function ProfileClient() {
                 id="instagram"
                 name="instagram"
                 type="text"
-                defaultValue={profile?.instagram || ""}
+                defaultValue={user.instagram || ""}
                 className="mt-2 min-h-12 w-full rounded-md border border-border bg-surface px-3 text-sm outline-none transition focus:border-primary"
               />
             </div>
@@ -254,11 +244,8 @@ export default function ProfileClient() {
             type="button"
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 text-sm font-semibold"
             onClick={async () => {
-              if (firebaseAuth) {
-                await signOut(firebaseAuth);
-              }
-
-              await clearSessionCookie();
+              await fetch("/api/auth/session", { method: "DELETE" });
+              setUser(null);
               router.refresh();
             }}
           >

@@ -8,7 +8,7 @@
 - moderator
 - admin
 
-## Public access
+## Public Access
 
 Guest can read only published/active public documents:
 
@@ -38,13 +38,12 @@ User cannot approve own content, modify ratings directly or read other users' pr
 
 Profile creation flow:
 
-1. `/register` creates a Firebase Authentication user.
-2. The client creates `users/{uid}` with base public profile fields.
+1. `/register` posts to `/api/auth/register`.
+2. The server validates input, hashes the password and creates `users`.
 3. The default role is `user`.
-4. Login/register sync the Firebase ID token to `/api/auth/session`, which creates the httpOnly
-   `de_ternopil_session` cookie for server-side page checks.
-5. Role changes must stay protected through Firestore Rules, server actions or Admin SDK scripts so
-   clients cannot promote themselves.
+4. If the email is listed in `ADMIN_EMAILS`, the server also adds `admin`.
+5. The server creates `auth_sessions` and sets httpOnly cookie `de_ternopil_session`.
+6. Role changes must stay protected through server routes or admin scripts so clients cannot promote themselves.
 
 ## Owner
 
@@ -87,15 +86,14 @@ Admin can manage:
 - blocking;
 - audit log review.
 
-Every important admin action writes to `auditLogs`.
+Every important admin action writes to `audit_logs`.
 
-## Server enforcement
+## Server Enforcement
 
 Security layers:
 
-1. Server role check in route handlers/server actions. `/admin` already verifies the session cookie
-   through Firebase Admin SDK before rendering.
+1. Server role check in route handlers/server actions. `/admin` verifies `de_ternopil_session` against Postgres before rendering.
 2. Zod validation before every write.
 3. Repository ownership checks before mutations.
-4. Firestore Rules as client-access boundary.
+4. Database constraints and transactions for data integrity.
 5. Audit log write for privileged actions.

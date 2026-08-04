@@ -2,12 +2,8 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { onAuthStateChanged, type User } from "firebase/auth";
-import { collection, doc, serverTimestamp, setDoc, type Firestore } from "firebase/firestore";
-import { firebaseAuth, firebaseDb, isFirebaseConfigured } from "@/firebase/firebaseClient";
 import { listingCategories } from "@/constants/content";
 import { listingCreateSchema, type ListingCreateInput } from "@/schemas/listing";
-import { uk } from "@/config/dictionaries/uk";
 
 const conditionOptions = [
   { value: "new", label: "Новий" },
@@ -23,40 +19,10 @@ const contactOptions = [
   { value: "other", label: "Інше" },
 ] as const;
 
-const listingLifetimeMs = 30 * 24 * 60 * 60 * 1000;
+async function readError(response: Response, fallback: string) {
+  const body = (await response.json().catch(() => null)) as { error?: string } | null;
 
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/['’]/g, "")
-    .replace(/[^a-z0-9а-яіїєґ]+/gi, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-function getListingExpiryIso() {
-  return new Date(Date.now() + listingLifetimeMs).toISOString();
-}
-
-async function createListingDocument(db: Firestore, user: User, data: ListingCreateInput) {
-  const ref = doc(collection(db, "listings"));
-
-  await setDoc(ref, {
-    ...data,
-    slug: `${slugify(data.title)}-${ref.id.slice(0, 6)}`,
-    userId: user.uid,
-    city: "Тернопіль",
-    currency: "UAH",
-    images: [],
-    status: "pending",
-    moderationStatus: "pending",
-    isFeatured: false,
-    views: 0,
-    favoritesCount: 0,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-    expiresAt: getListingExpiryIso(),
-  });
+  return body?.error || fallback;
 }
 
 export default function ListingForm() {
@@ -101,30 +67,17 @@ export default function ListingForm() {
       return;
     }
 
-    const auth = firebaseAuth;
-    const db = firebaseDb;
-
-    if (!isFirebaseConfigured || !auth || !db) {
-      setIsError(true);
-      setMessage(uk.auth.firebaseMissing);
-      return;
-    }
-
-    const user = await new Promise<User | null>((resolve) => {
-      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        unsubscribe();
-        resolve(currentUser);
-      });
-    });
-
-    if (!user) {
-      setIsError(true);
-      setMessage("Щоб створити оголошення, потрібно увійти.");
-      return;
-    }
-
     try {
-      await createListingDocument(db, user, parsed.data);
+      const response = await fetch("/api/listings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+
+      if (!response.ok) {
+        throw new Error(await readError(response, "Не вдалося створити оголошення."));
+      }
+
       reset();
       setMessage("Оголошення створено і відправлено на модерацію.");
     } catch (error) {

@@ -7,18 +7,21 @@
 - Публічний портал: головна, новини, місця, локації, події, карта, маркет, пошук, правові сторінки.
 - Detail pages: окремі SEO-сторінки для контенту й оголошень.
 - Auth: реєстрація, вхід, відновлення пароля, профіль.
+- Server-side auth/database: Postgres users, password hashes, auth sessions, httpOnly cookie.
+- Server-side guard для `/admin`: перевірка cookie, активної сесії та ролі `admin`.
 - Кабінети: user profile, owner cabinet, moderation queue, admin dashboard.
-- Server-side guard для `/admin`: httpOnly session cookie, Firebase Admin verification, роль `admin` із Firestore/custom claims.
 - Market: створення оголошення авторизованим користувачем, статус `pending`, базові поля модерації.
-- Firebase: client/admin wrappers, rules, storage rules, indexes, seed script.
 - SEO: metadata, sitemap, robots, Open Graph, structured data, 404/500.
 - Якість: `npm run lint`, `npm run build`, `npm test`.
 
-## Production-доробки після підключення реального Firebase
+## Production-доробки після підключення Neon/Postgres
 
+- Створити Neon Store у Vercel і додати `DATABASE_URL`.
+- Додати `ADMIN_EMAILS` для першого адміністратора.
+- Запустити `npm run seed` після `vercel env pull`.
 - Server-side role guards для `/owner` і `/moderation`.
 - CRUD-екрани адмінки для users, roles, categories, homepage sections, ads і audit logs.
-- Realtime/query-backed списки замість static seed data.
+- Query-backed списки замість static seed data для всіх публічних модулів.
 - Повний Leaflet/OpenStreetMap runtime з кластеризацією.
-- Firebase Emulator security-rules tests.
-- Image upload/compression для Storage.
+- Image upload/compression через окремий storage provider.
+- Email provider для реального password reset flow.

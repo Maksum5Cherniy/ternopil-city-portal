@@ -4,16 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { firebaseAuth, isFirebaseConfigured } from "@/firebase/firebaseClient";
 import { loginSchema, type LoginInput } from "@/schemas/auth";
 import { uk } from "@/config/dictionaries/uk";
-import { syncSessionCookie } from "./sessionCookie";
 
 type LoginFormValues = LoginInput;
 
-function needsServerSession(path: string) {
-  return path === "/admin" || path.startsWith("/admin/");
+async function readError(response: Response, fallback: string) {
+  const body = (await response.json().catch(() => null)) as { error?: string } | null;
+
+  return body?.error || fallback;
 }
 
 export default function LoginForm({ redirectTo = "/profile" }: { redirectTo?: string }) {
@@ -50,25 +49,15 @@ export default function LoginForm({ redirectTo = "/profile" }: { redirectTo?: st
       return;
     }
 
-    if (!isFirebaseConfigured || !firebaseAuth) {
-      setIsError(true);
-      setMessage(uk.auth.firebaseMissing);
-      return;
-    }
-
     try {
-      const credential = await signInWithEmailAndPassword(
-        firebaseAuth,
-        parsed.data.email,
-        parsed.data.password,
-      );
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
 
-      try {
-        await syncSessionCookie(credential.user);
-      } catch (error) {
-        if (needsServerSession(redirectTo)) {
-          throw error;
-        }
+      if (!response.ok) {
+        throw new Error(await readError(response, "Не вдалося увійти."));
       }
 
       setMessage(uk.auth.loginSuccess);

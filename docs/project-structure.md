@@ -3,6 +3,10 @@
 ```txt
 app/
   admin/
+  api/
+    auth/
+    listings/
+    profile/
   contacts/
   events/
     [slug]/
@@ -38,9 +42,7 @@ components/
   ui/
 config/
 constants/
-firebase/
 lib/
-rules/
 schemas/
 scripts/
 styles/
@@ -50,9 +52,10 @@ types/
 
 ## Основні межі
 
-- `app/` містить маршрути Next.js і metadata.
+- `app/` містить маршрути Next.js, API route handlers і metadata.
 - `components/` містить клієнтські форми, UI-компоненти та reusable сторінкові блоки.
 - `constants/content.ts` дає стартові seed/static дані для публічних модулів.
-- `firebase/`, `rules/`, `firestore.indexes.json` готують реальне підключення Firebase.
+- `lib/database.ts` містить Postgres client, schema bootstrap і базові data helpers.
+- `lib/auth-session.ts` відповідає за server-side session cookie і role checks.
 - `schemas/` містить Zod-схеми для auth, content і market listing forms.
-- `lib/access-control.ts` описує ролі й дозволи.
+- `scripts/seed.ts` створює стартову схему та seed-дані, коли доступний `DATABASE_URL`.

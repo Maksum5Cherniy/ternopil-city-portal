@@ -6,23 +6,30 @@
 2. Build command: `npm run build`.
 3. Output framework: Next.js.
 4. Додати Environment Variables з `.env.example`.
-5. Для service account краще зберігати приватний ключ у змінній `FIREBASE_PRIVATE_KEY` з escaped line breaks.
+5. Підключити Neon Postgres Store або іншу Postgres-базу і додати `DATABASE_URL`.
+6. Додати `ADMIN_EMAILS` для першого адміністратора.
 
 Мінімум для server-side доступу до `/admin`:
 
-- `FIREBASE_PROJECT_ID`
-- `FIREBASE_CLIENT_EMAIL`
-- `FIREBASE_PRIVATE_KEY`
+- `DATABASE_URL`
+- `ADMIN_EMAILS`
 
-Без цих змінних сторінка `/admin` залишається закритою і показує повідомлення про відсутню Firebase Admin конфігурацію.
+Без `DATABASE_URL` сторінка `/admin` залишається закритою і показує повідомлення про відсутню базу даних. Публічні сторінки все одно збираються та відкриваються зі static seed data.
 
-## Firebase
+## Vercel Stores
+
+Рекомендована команда після прийняття Neon Marketplace terms:
 
 ```bash
-firebase login
-firebase use <project-id>
-firebase deploy --only firestore:rules,firestore:indexes,storage
+npx vercel integration add neon --name ternopil-city-portal-db --plan free_v3 -m region=fra1 -m auth=false -e production -e preview -e development --scope de-te --json
+```
+
+Після створення Store:
+
+```bash
+npx vercel env pull .env.local --yes --scope de-te
 npm run seed
+npx vercel --prod --scope de-te
 ```
 
 ## Перед релізом

@@ -4,29 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-import { firebaseAuth, firebaseDb, isFirebaseConfigured } from "@/firebase/firebaseClient";
 import { registerSchema, type RegisterInput } from "@/schemas/auth";
 import { uk } from "@/config/dictionaries/uk";
-import { syncSessionCookie } from "./sessionCookie";
 
 type RegisterFormValues = RegisterInput;
 
-function mapFirebaseError(error: unknown) {
-  if (error instanceof Error) {
-    if (error.message.includes("auth/email-already-in-use")) {
-      return "Цей email вже використовується.";
-    }
+async function readError(response: Response, fallback: string) {
+  const body = (await response.json().catch(() => null)) as { error?: string } | null;
 
-    if (error.message.includes("auth/weak-password")) {
-      return "Пароль занадто слабкий.";
-    }
-
-    return error.message;
-  }
-
-  return "Не вдалося створити профіль.";
+  return body?.error || fallback;
 }
 
 export default function RegisterForm() {
@@ -66,41 +52,24 @@ export default function RegisterForm() {
       return;
     }
 
-    if (!isFirebaseConfigured || !firebaseAuth || !firebaseDb) {
-      setStatus("error");
-      setMessage(uk.auth.firebaseMissing);
-      return;
-    }
-
     try {
-      const credential = await createUserWithEmailAndPassword(
-        firebaseAuth,
-        parsed.data.email,
-        parsed.data.password,
-      );
-
-      await updateProfile(credential.user, {
-        displayName: parsed.data.displayName,
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
       });
 
-      await setDoc(doc(firebaseDb, "users", credential.user.uid), {
-        displayName: parsed.data.displayName,
-        email: parsed.data.email,
-        roles: ["user"],
-        isBlocked: false,
-        profileCompleted: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      if (!response.ok) {
+        throw new Error(await readError(response, "Не вдалося створити профіль."));
+      }
 
-      await syncSessionCookie(credential.user).catch(() => undefined);
       setStatus("success");
       setMessage(uk.auth.profileCreated);
       router.refresh();
       router.push("/profile");
     } catch (error) {
       setStatus("error");
-      setMessage(mapFirebaseError(error));
+      setMessage(error instanceof Error ? error.message : "Не вдалося створити профіль.");
     }
   };
 

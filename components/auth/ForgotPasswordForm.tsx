@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { firebaseAuth, isFirebaseConfigured } from "@/firebase/firebaseClient";
 import { loginSchema, type LoginInput } from "@/schemas/auth";
-import { uk } from "@/config/dictionaries/uk";
+
+async function readResponse(response: Response) {
+  return (await response.json().catch(() => null)) as { error?: string; message?: string } | null;
+}
 
 export default function ForgotPasswordForm() {
   const [message, setMessage] = useState("");
@@ -29,19 +30,23 @@ export default function ForgotPasswordForm() {
       return;
     }
 
-    if (!isFirebaseConfigured || !firebaseAuth) {
-      setIsError(true);
-      setMessage(uk.auth.firebaseMissing);
-      return;
-    }
-
     try {
-      await sendPasswordResetEmail(firebaseAuth, parsed.data.email);
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+      const body = await readResponse(response);
+
+      if (!response.ok) {
+        throw new Error(body?.error || "Не вдалося прийняти запит.");
+      }
+
       setIsError(false);
-      setMessage("Лист для відновлення пароля надіслано.");
+      setMessage(body?.message || "Запит на відновлення прийнято.");
     } catch (error) {
       setIsError(true);
-      setMessage(error instanceof Error ? error.message : "Не вдалося надіслати лист.");
+      setMessage(error instanceof Error ? error.message : "Не вдалося прийняти запит.");
     }
   };
 
