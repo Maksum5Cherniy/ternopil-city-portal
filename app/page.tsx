@@ -155,7 +155,7 @@ export default async function Home() {
                   name="q"
                   type="search"
                   placeholder={uk.common.searchPlaceholder}
-                  className="min-w-0 flex-1 bg-transparent text-sm text-[#0D1B3D] outline-none placeholder:text-[#5d6680]"
+                  className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#0B1220] outline-none placeholder:text-[#5d6680]"
                 />
               </div>
               <button
