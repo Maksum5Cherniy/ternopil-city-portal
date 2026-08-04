@@ -24,12 +24,12 @@ Domain is added to Vercel project `ternopil-city-portal` as:
 - `deternopil.pp.ua`
 - `www.deternopil.pp.ua`
 
-NIC.UA registrar nameservers must be changed from parked nameservers to Vercel:
+NIC.UA registrar nameservers are configured for Vercel DNS:
 
 - `ns1.vercel-dns.com`
 - `ns2.vercel-dns.com`
 
-Vercel DNS already contains the website ALIAS records and Resend email records.
+Vercel DNS contains the website ALIAS records and Resend email records. Resend domain `deternopil.pp.ua` is verified.
 
 Мінімум для server-side доступу до `/admin`:
 
