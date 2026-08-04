@@ -1,0 +1,170 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function roles() {
+      return signedIn() && exists(/databases/$(database)/documents/userRoles/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/userRoles/$(request.auth.uid)).data.roles
+        : [];
+    }
+
+    function hasRole(role) {
+      return signedIn() && (role in roles());
+    }
+
+    function isModerator() {
+      return hasRole("moderator") || hasRole("admin");
+    }
+
+    function isAdmin() {
+      return hasRole("admin");
+    }
+
+    function publicPublished() {
+      return resource.data.status in ["published", "active"] || resource.data.isPublic == true;
+    }
+
+    function createsBaseUserProfile(uid) {
+      return isOwner(uid)
+        && request.resource.data.roles == ["user"]
+        && request.resource.data.isBlocked == false
+        && request.resource.data.keys().hasOnly([
+          "displayName",
+          "email",
+          "roles",
+          "isBlocked",
+          "profileCompleted",
+          "phone",
+          "telegram",
+          "instagram",
+          "createdAt",
+          "updatedAt"
+        ]);
+    }
+
+    match /users/{uid} {
+      allow create: if createsBaseUserProfile(uid);
+      allow read, update: if isOwner(uid) || isModerator();
+      allow delete: if isAdmin();
+    }
+
+    match /userRoles/{uid} {
+      allow read: if isOwner(uid) || isModerator();
+      allow write: if isAdmin();
+    }
+
+    match /news/{docId} {
+      allow read: if publicPublished() || isModerator();
+      allow create, update, delete: if isModerator();
+    }
+
+    match /places/{docId} {
+      allow read: if publicPublished() || isModerator();
+      allow create: if isModerator();
+      allow update, delete: if isModerator();
+    }
+
+    match /locations/{docId} {
+      allow read: if publicPublished() || isModerator();
+      allow write: if isModerator();
+    }
+
+    match /events/{docId} {
+      allow read: if publicPublished() || isModerator();
+      allow create: if signedIn();
+      allow update, delete: if isModerator() || (signedIn() && resource.data.ownerId == request.auth.uid);
+    }
+
+    match /listings/{docId} {
+      allow read: if resource.data.status == "active" || isModerator() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status in ["draft", "pending"]
+        && request.resource.data.images.size() <= 8;
+      allow update: if isModerator() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow delete: if isModerator() || (signedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    match /reviews/{docId} {
+      allow read: if resource.data.status == "approved" || isModerator() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if signedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow update, delete: if isModerator() || (signedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    match /favorites/{docId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create, update: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /reports/{docId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isModerator();
+    }
+
+    match /notifications/{docId} {
+      allow read, update: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create, delete: if isModerator();
+    }
+
+    match /placeClaims/{docId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isModerator() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isModerator();
+    }
+
+    match /placeChangeRequests/{docId} {
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow read: if isModerator() || (signedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isModerator();
+    }
+
+    match /moderationQueue/{docId} {
+      allow read, write: if isModerator();
+    }
+
+    match /auditLogs/{docId} {
+      allow read: if isAdmin();
+      allow create: if isModerator();
+      allow update, delete: if false;
+    }
+
+    match /advertisements/{docId} {
+      allow read: if resource.data.status == "active" || isModerator();
+      allow write: if isAdmin();
+    }
+
+    match /homepageSections/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /siteSettings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /{collection}/{docId} {
+      allow read: if collection in [
+        "newsCategories",
+        "placeCategories",
+        "locationCategories",
+        "eventCategories",
+        "listingCategories",
+        "tags"
+      ];
+      allow write: if isAdmin();
+    }
+  }
+}

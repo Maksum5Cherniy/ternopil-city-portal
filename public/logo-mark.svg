@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Знак Де Тернопіль</title>
+  <desc id="desc">Знак з вежею Тернополя, хвилями ставу і жовтим прапорцем</desc>
+  <path d="M50 218V90c0-35 25-58 61-58h34c63 0 108 47 108 110 0 61-45 108-113 108H50Z" fill="#0D1B3D"/>
+  <path d="M111 201V101c0-19 13-32 32-32h13c38 0 65 31 65 74 0 42-27 74-65 74h-45Z" fill="#FFFFFF"/>
+  <path d="M145 198v-88h15V84h14v26h14v88h-43Z" fill="#0D1B3D"/>
+  <path d="M128 196h78v22h-78z" fill="#0D1B3D"/>
+  <path d="M152 84h11V60h18v24h10v22h-39V84Z" fill="#F3F4F6"/>
+  <path d="M42 220c45-38 109-53 194-48 29 2 42 20 24 39-23 25-101 35-218 9Z" fill="#2563EB"/>
+  <path d="M42 220c46-26 109-36 189-30" fill="none" stroke="#1E3ABA" stroke-width="15" stroke-linecap="round"/>
+  <circle cx="99" cy="211" r="10" fill="#FFFFFF"/>
+  <circle cx="154" cy="205" r="10" fill="#FFFFFF"/>
+  <circle cx="210" cy="200" r="10" fill="#FFFFFF"/>
+  <path d="M149 28h45l-15 12 15 12h-45V28Z" fill="#FBBF24"/>
+  <path d="M146 26v45" stroke="#0D1B3D" stroke-width="8" stroke-linecap="round"/>
+</svg>

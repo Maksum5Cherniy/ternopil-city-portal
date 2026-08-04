@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Де Тернопіль</title>
+  <desc id="desc">Темна іконка застосунку Де Тернопіль</desc>
+  <rect width="256" height="256" rx="48" fill="#0D1B3D"/>
+  <path d="M62 218V91c0-35 25-58 61-58h26c58 0 96 42 96 104 0 58-41 101-105 101H62Z" fill="#F3F4F6"/>
+  <path d="M117 198V102c0-19 13-32 32-32h8c34 0 56 28 56 67s-22 67-56 67h-40Z" fill="#0D1B3D"/>
+  <path d="M146 197v-86h15V85h14v26h13v86h-42Z" fill="#FFFFFF"/>
+  <path d="M130 196h76v21h-76z" fill="#FFFFFF"/>
+  <path d="M151 85h11V61h17v24h10v22h-38V85Z" fill="#F3F4F6"/>
+  <path d="M40 220c45-38 109-53 194-48 29 2 42 20 24 39-23 25-101 35-218 9Z" fill="#2563EB"/>
+  <path d="M42 220c46-26 109-36 189-30" fill="none" stroke="#1E3ABA" stroke-width="15" stroke-linecap="round"/>
+  <circle cx="99" cy="211" r="10" fill="#FFFFFF"/>
+  <circle cx="154" cy="205" r="10" fill="#FFFFFF"/>
+  <circle cx="210" cy="200" r="10" fill="#FBBF24"/>
+  <path d="M151 29h43l-14 12 14 12h-43V29Z" fill="#FBBF24"/>
+  <path d="M148 27v45" stroke="#F3F4F6" stroke-width="8" stroke-linecap="round"/>
+</svg>

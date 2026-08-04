@@ -1,0 +1,70 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Search } from "lucide-react";
+import { allSearchItems } from "@/constants/content";
+import { uk } from "@/config/dictionaries/uk";
+
+export const metadata: Metadata = {
+  title: "Пошук",
+  description: "Глобальний пошук по новинах, закладах, локаціях, подіях та оголошеннях.",
+};
+
+type SearchPageProps = {
+  searchParams?: Promise<{
+    q?: string | string[];
+  }>;
+};
+
+export default async function SearchPage({ searchParams }: SearchPageProps) {
+  const params = await searchParams;
+  const rawQuery = params?.q;
+  const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery || "").trim().toLowerCase();
+  const results = query
+    ? allSearchItems.filter((item) =>
+        `${item.title} ${item.description} ${item.meta || ""}`.toLowerCase().includes(query),
+      )
+    : allSearchItems;
+
+  return (
+    <section className="mx-auto w-full max-w-[920px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <h1 className="text-3xl font-semibold tracking-normal sm:text-5xl">{uk.common.search}</h1>
+      <form action="/search" className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <label htmlFor="search-page-query" className="sr-only">
+          {uk.common.search}
+        </label>
+        <div className="flex min-h-12 flex-1 items-center gap-2 rounded-md border border-border bg-surface px-3">
+          <Search aria-hidden size={18} className="text-muted" />
+          <input
+            id="search-page-query"
+            name="q"
+            type="search"
+            defaultValue={query}
+            placeholder={uk.common.searchPlaceholder}
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
+          />
+        </div>
+        <button
+          type="submit"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-white"
+        >
+          <Search aria-hidden size={18} />
+          <span>{uk.common.submitSearch}</span>
+        </button>
+      </form>
+
+      <div className="mt-8 grid gap-3">
+        {results.map((item) => (
+          <Link
+            key={`${item.type}-${item.href}`}
+            href={item.href}
+            className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          >
+            <div className="text-xs font-semibold text-primary">{item.type}</div>
+            <h2 className="mt-1 text-lg font-semibold">{item.title}</h2>
+            <p className="mt-1 text-sm leading-6 text-muted">{item.description}</p>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}

@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Де Тернопіль
 
-## Getting Started
+Міський інформаційний портал Тернополя на Next.js App Router, TypeScript, Tailwind CSS і Firebase. У проєкті є публічні розділи, профілі користувачів, адмін-панель, кабінет власника, модерація, міська барахолка, SEO-структура, правила Firebase, seed-дані та базові тести доступів.
 
-First, run the development server:
+## Що реалізовано
+
+- Бренд “Де Тернопіль”, SVG-логотип у `public/logo.svg`, знак у `public/logo-mark.svg`, app icon у `public/app-icon.svg`, адаптивний header/footer.
+- Палітра з нового дизайн-макету: основний синій `#0D1B3D`, акцентний синій `#1E3ABA`, світлий синій `#2563EB`, жовтий `#FBBF24`, зелений `#22C55E`, світлий сірий `#F3F4F6`, текстовий сірий `#374151`.
+- Публічні сторінки: `/`, `/news`, `/places`, `/locations`, `/events`, `/map`, `/market`, `/search`, `/contacts`, `/privacy`, `/terms`.
+- Детальні сторінки для новин, закладів, локацій, подій і оголошень: `/news/[slug]`, `/places/[slug]`, `/locations/[slug]`, `/events/[slug]`, `/market/[slug]`.
+- Реєстрація, вхід, відновлення пароля та профіль: `/register`, `/login`, `/forgot-password`, `/profile`.
+- Адмін-панель і службові кабінети: `/admin`, `/owner`, `/moderation`.
+- Створення оголошень користувачами: `/market/new` з Firebase Auth + Firestore write flow.
+- Firestore/Storage rules, індекси, Firebase config і seed script.
+- SEO: metadata, Open Graph, sitemap, robots, structured data на detail pages, 404/500/error screens.
+- Zod-схеми, доменні типи, рольова модель і unit-тести для access control.
+
+## Як люди створюють профілі
+
+1. Користувач відкриває `/register`.
+2. Вводить імʼя, email, телефон, тип профілю та пароль.
+3. Firebase Authentication створює акаунт.
+4. Після цього у Firestore створюється документ `users/{uid}` зі статусом `active`, роллю `user` і публічним профілем.
+5. Користувач переходить у `/profile`, а для оголошень використовує `/market/new`.
+
+Для реальної роботи цього flow потрібен налаштований Firebase-проєкт і `.env.local`.
+
+## Запуск
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Локальна адреса за замовчуванням: `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Перевірка
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run format:check
+npm run lint
+npm run build
+npm test
+```
 
-## Learn More
+## Firebase
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run seed
+firebase deploy --only firestore:rules,firestore:indexes,storage
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Перед цим заповніть `.env.local` на основі `.env.example`. Реальні service-account ключі не можна комітити.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Документація
 
-## Deploy on Vercel
+- `docs/architecture.md`
+- `docs/project-structure.md`
+- `docs/firestore-schema.md`
+- `docs/access-control.md`
+- `docs/firebase.md`
+- `docs/deployment.md`
+- `docs/implementation-plan.md`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Відомі обмеження
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Публічні дані зараз seed/static-ready; реальна адмінська CRUD-робота потребує підключеного Firebase-проєкту.
+- Карта має UI-підготовку; повноцінний Leaflet/OpenStreetMap runtime можна підключати поверх наявної структури.
+- `npm audit --omit=dev` показує moderate transitive advisory у ланцюжку `firebase-admin`; безпечний non-force fix наразі недоступний, force downgrade не застосовано.

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="170" viewBox="0 0 620 170" role="img" aria-labelledby="title desc">
+  <title id="title">Де Тернопіль</title>
+  <desc id="desc">Логотип міського порталу з вежею, синіми хвилями, жовтим прапорцем і маркером локації</desc>
+  <g transform="translate(12 9)">
+    <path d="M40 147V63c0-24 17-40 42-40h22c43 0 74 32 74 75 0 42-31 74-78 74H40Z" fill="#0D1B3D"/>
+    <path d="M80 136V69c0-13 9-22 22-22h9c26 0 44 21 44 51s-18 51-44 51H80Z" fill="#FFFFFF"/>
+    <path d="M107 135V75h11V58h10v17h9v60h-30Z" fill="#0D1B3D"/>
+    <path d="M96 135h55v14H96z" fill="#0D1B3D"/>
+    <path d="M112 58h8V42h12v16h7v15h-27V58Z" fill="#F3F4F6"/>
+    <path d="M35 148c30-26 74-36 132-33 19 1 28 14 16 27-16 17-69 24-148 6Z" fill="#2563EB"/>
+    <path d="M35 148c31-17 74-24 127-20" fill="none" stroke="#1E3ABA" stroke-width="10" stroke-linecap="round"/>
+    <circle cx="74" cy="142" r="7" fill="#FFFFFF"/>
+    <circle cx="112" cy="138" r="7" fill="#FFFFFF"/>
+    <circle cx="151" cy="135" r="7" fill="#FFFFFF"/>
+    <path d="M110 22h31l-10 8 10 8h-31V22Z" fill="#FBBF24"/>
+    <path d="M108 21v31" stroke="#0D1B3D" stroke-width="5" stroke-linecap="round"/>
+  </g>
+  <text x="204" y="82" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="800" fill="#0D1B3D">Де Терн</text>
+  <path d="M462 34c-17 0-31 13-31 30 0 22 31 52 31 52s31-30 31-52c0-17-14-30-31-30Z" fill="#FBBF24"/>
+  <circle cx="462" cy="64" r="10" fill="#FFFFFF"/>
+  <text x="492" y="82" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="800" fill="#0D1B3D">піль</text>
+  <text x="206" y="125" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600" fill="#1E3ABA">Місто. Люди. Можливості.</text>
+</svg>
