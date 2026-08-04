@@ -1,6 +1,18 @@
 "use client";
 
-import { Archive, Ban, Check, EyeOff, RotateCcw, Save, Send, Trash2, X } from "lucide-react";
+import {
+  Archive,
+  Ban,
+  Check,
+  EyeOff,
+  MessageSquare,
+  RotateCcw,
+  Save,
+  Send,
+  Star,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
@@ -73,6 +85,10 @@ const settingLabels: Record<string, { label: string; hint: string; multiline?: b
   },
 };
 
+const fieldClass =
+  "min-h-11 rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15";
+const panelClass = "rounded-md border border-border bg-surface-subtle p-4";
+
 async function readError(response: Response, fallback: string) {
   const body = (await response.json().catch(() => null)) as {
     error?: string;
@@ -104,13 +120,16 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-24 rounded-lg border border-border bg-surface p-5">
+    <section
+      id={id}
+      className="scroll-mt-24 rounded-lg border border-border bg-surface p-5 shadow-[var(--shadow)]"
+    >
       <div className="flex flex-col gap-2 border-b border-border pb-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 className="text-xl font-semibold">{title}</h2>
           <p className="mt-1 text-sm leading-6 text-muted">{description}</p>
         </div>
-        <a href="#top" className="text-sm font-semibold text-primary underline">
+        <a href="#admin-top" className="text-sm font-semibold text-primary underline">
           До карток
         </a>
       </div>
@@ -238,6 +257,32 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       refreshWithMessage("Скаргу оновлено.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Не вдалося змінити статус скарги.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const moderateReview = async (
+    reviewId: string,
+    status: "approved" | "rejected" | "hidden" | "blocked",
+  ) => {
+    setMessage("");
+    setIsBusy(true);
+
+    try {
+      const response = await fetch("/api/admin/reviews", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewId, status }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await readError(response, "Не вдалося змінити статус відгуку."));
+      }
+
+      refreshWithMessage("Відгук оновлено.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Не вдалося змінити статус відгуку.");
     } finally {
       setIsBusy(false);
     }
@@ -416,18 +461,17 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
 
     return (
       <div className="grid gap-5">
-        <form action={(formData) => saveContent(formData, type)} className="grid gap-3">
+        <form
+          action={(formData) => saveContent(formData, type)}
+          className="grid gap-3 rounded-md border border-border bg-surface-subtle p-4"
+        >
           <h3 className="font-semibold">{labels.createTitle}</h3>
           <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_120px_150px]">
-            <input
-              name={`${type}-title-new`}
-              placeholder="Назва"
-              className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm"
-            />
+            <input name={`${type}-title-new`} placeholder="Назва" className={fieldClass} />
             <input
               name={`${type}-href-new`}
               placeholder={labels.hrefPlaceholder}
-              className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm"
+              className={fieldClass}
             />
             <input
               name={`${type}-order-new`}
@@ -435,13 +479,9 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
               min="0"
               defaultValue="0"
               aria-label="Порядок"
-              className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm"
+              className={fieldClass}
             />
-            <select
-              name={`${type}-status-new`}
-              defaultValue="draft"
-              className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm"
-            >
+            <select name={`${type}-status-new`} defaultValue="draft" className={fieldClass}>
               {statusOptions.map((status) => (
                 <option key={status.value} value={status.value}>
                   {status.label}
@@ -453,13 +493,13 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
             name={`${type}-summary-new`}
             placeholder="Короткий опис"
             rows={3}
-            className="rounded-md border border-border bg-surface px-3 py-2 text-sm"
+            className={fieldClass}
           />
           <textarea
             name={`${type}-notes-new`}
             placeholder="Адмін-нотатки, категорія, контакти, умови показу"
             rows={2}
-            className="rounded-md border border-border bg-surface px-3 py-2 text-sm"
+            className={fieldClass}
           />
           <Button type="submit" disabled={isBusy} leftIcon={<Save aria-hidden size={16} />}>
             Створити
@@ -472,7 +512,7 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
               <form
                 key={item.id}
                 action={(formData) => saveContent(formData, type, item.id)}
-                className="grid gap-3 rounded-md border border-border p-4"
+                className="grid gap-3 rounded-md border border-border bg-surface-subtle p-4"
               >
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                   <div>
@@ -530,24 +570,24 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                   <input
                     name={`${type}-title-${item.id}`}
                     defaultValue={item.title}
-                    className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm"
+                    className={fieldClass}
                   />
                   <input
                     name={`${type}-href-${item.id}`}
                     defaultValue={item.href || ""}
-                    className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm"
+                    className={fieldClass}
                   />
                   <input
                     name={`${type}-order-${item.id}`}
                     type="number"
                     min="0"
                     defaultValue={item.orderIndex}
-                    className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm"
+                    className={fieldClass}
                   />
                   <select
                     name={`${type}-status-${item.id}`}
                     defaultValue={item.status}
-                    className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm"
+                    className={fieldClass}
                   >
                     {statusOptions.map((status) => (
                       <option key={status.value} value={status.value}>
@@ -560,13 +600,13 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                   name={`${type}-summary-${item.id}`}
                   defaultValue={item.summary || ""}
                   rows={2}
-                  className="rounded-md border border-border bg-surface px-3 py-2 text-sm"
+                  className={fieldClass}
                 />
                 <textarea
                   name={`${type}-notes-${item.id}`}
                   defaultValue={item.notes || ""}
                   rows={2}
-                  className="rounded-md border border-border bg-surface px-3 py-2 text-sm"
+                  className={fieldClass}
                 />
                 <Button
                   type="submit"
@@ -604,7 +644,7 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
             <form
               key={user.id}
               action={(formData) => updateUser(formData, user)}
-              className="rounded-md border border-border p-4"
+              className={panelClass}
             >
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
@@ -638,7 +678,7 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                     <select
                       name={`sellerStatus-${user.id}`}
                       defaultValue={user.sellerStatus}
-                      className="min-h-10 rounded-md border border-border bg-surface px-3 text-sm"
+                      className={fieldClass}
                     >
                       <option value="active">seller active</option>
                       <option value="suspended">seller suspended</option>
@@ -657,7 +697,7 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                     name={`blockedReason-${user.id}`}
                     defaultValue={user.blockedReason || ""}
                     placeholder="Причина блокування"
-                    className="min-h-10 rounded-md border border-border bg-surface px-3 text-sm"
+                    className={fieldClass}
                   />
                   <Button
                     type="submit"
@@ -681,7 +721,7 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       >
         <div className="grid gap-4 lg:grid-cols-2">
           {roleOptions.map((role) => (
-            <div key={role.value} className="rounded-md border border-border p-4">
+            <div key={role.value} className={panelClass}>
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-semibold">{role.label}</h3>
                 <Badge variant={role.value === "admin" ? "warning" : "primary"}>
@@ -714,7 +754,7 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
             <div className="mt-3 grid gap-3">
               {data.ownerClaims.length > 0 ? (
                 data.ownerClaims.map((claim) => (
-                  <div key={claim.id} className="rounded-md border border-border p-4">
+                  <div key={claim.id} className={panelClass}>
                     <div className="flex flex-wrap items-center gap-2">
                       <h4 className="font-semibold">{claim.placeName}</h4>
                       <Badge variant={statusVariant(claim.status)}>{claim.status}</Badge>
@@ -759,69 +799,145 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       <Section
         id="admin-moderation"
         title="Модерація"
-        description="Оголошення з барахолки, рішення модератора і публічний статус."
+        description="Оголошення з барахолки, відгуки, рішення модератора і публічний статус."
       >
-        <div className="grid gap-3">
-          {data.listings.length > 0 ? (
-            data.listings.map((listing) => (
-              <div key={listing.id} className="rounded-md border border-border p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold">{listing.title}</h3>
-                  <Badge variant={statusVariant(listing.moderationStatus)}>
-                    {listing.moderationStatus}
-                  </Badge>
-                  <Badge>{listing.status}</Badge>
-                </div>
-                <p className="mt-1 text-sm text-muted">
-                  {listing.authorName} · {listing.authorEmail} · {formatDate(listing.createdAt)}
-                </p>
-                <p className="mt-2 text-sm leading-6">{listing.description}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => moderateListing(listing.id, "approved")}
-                    disabled={isBusy}
-                    leftIcon={<Check aria-hidden size={15} />}
-                  >
-                    Схвалити
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => moderateListing(listing.id, "rejected")}
-                    disabled={isBusy}
-                    leftIcon={<X aria-hidden size={15} />}
-                  >
-                    Відхилити
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="subtle"
-                    onClick={() => moderateListing(listing.id, "hidden")}
-                    disabled={isBusy}
-                    leftIcon={<EyeOff aria-hidden size={15} />}
-                  >
-                    Приховати
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="accent"
-                    onClick={() => moderateListing(listing.id, "blocked")}
-                    disabled={isBusy}
-                    leftIcon={<Ban aria-hidden size={15} />}
-                  >
-                    Заблокувати
-                  </Button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <EmptyState>Оголошень немає.</EmptyState>
-          )}
+        <div className="grid gap-5">
+          <div>
+            <h3 className="flex items-center gap-2 font-semibold">
+              <MessageSquare aria-hidden size={18} className="text-primary" />
+              Оголошення
+            </h3>
+            <div className="mt-3 grid gap-3">
+              {data.listings.length > 0 ? (
+                data.listings.map((listing) => (
+                  <div key={listing.id} className={panelClass}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="font-semibold">{listing.title}</h4>
+                      <Badge variant={statusVariant(listing.moderationStatus)}>
+                        {listing.moderationStatus}
+                      </Badge>
+                      <Badge>{listing.status}</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted">
+                      {listing.authorName} · {listing.authorEmail} · {formatDate(listing.createdAt)}
+                    </p>
+                    <p className="mt-2 text-sm leading-6">{listing.description}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => moderateListing(listing.id, "approved")}
+                        disabled={isBusy}
+                        leftIcon={<Check aria-hidden size={15} />}
+                      >
+                        Схвалити
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => moderateListing(listing.id, "rejected")}
+                        disabled={isBusy}
+                        leftIcon={<X aria-hidden size={15} />}
+                      >
+                        Відхилити
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="subtle"
+                        onClick={() => moderateListing(listing.id, "hidden")}
+                        disabled={isBusy}
+                        leftIcon={<EyeOff aria-hidden size={15} />}
+                      >
+                        Приховати
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="accent"
+                        onClick={() => moderateListing(listing.id, "blocked")}
+                        disabled={isBusy}
+                        leftIcon={<Ban aria-hidden size={15} />}
+                      >
+                        Заблокувати
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <EmptyState>Оголошень немає.</EmptyState>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="flex items-center gap-2 font-semibold">
+              <Star aria-hidden size={18} className="text-accent-strong" />
+              Відгуки
+            </h3>
+            <div className="mt-3 grid gap-3">
+              {data.reviews.length > 0 ? (
+                data.reviews.map((review) => (
+                  <div key={review.id} className={panelClass}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h4 className="font-semibold">{review.targetTitle}</h4>
+                      <Badge variant={statusVariant(review.status)}>{review.status}</Badge>
+                      <Badge>{review.rating} / 5</Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted">
+                      {review.userName || "Користувач"} · {review.userEmail || "email приховано"} ·{" "}
+                      {formatDate(review.createdAt)}
+                    </p>
+                    <p className="mt-2 text-sm leading-6">{review.text}</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => moderateReview(review.id, "approved")}
+                        disabled={isBusy}
+                        leftIcon={<Check aria-hidden size={15} />}
+                      >
+                        Схвалити
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => moderateReview(review.id, "rejected")}
+                        disabled={isBusy}
+                        leftIcon={<X aria-hidden size={15} />}
+                      >
+                        Відхилити
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="subtle"
+                        onClick={() => moderateReview(review.id, "hidden")}
+                        disabled={isBusy}
+                        leftIcon={<EyeOff aria-hidden size={15} />}
+                      >
+                        Приховати
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="accent"
+                        onClick={() => moderateReview(review.id, "blocked")}
+                        disabled={isBusy}
+                        leftIcon={<Ban aria-hidden size={15} />}
+                      >
+                        Заблокувати
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <EmptyState>Відгуків немає.</EmptyState>
+              )}
+            </div>
+          </div>
         </div>
       </Section>
 
@@ -833,7 +949,7 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
         <div className="grid gap-3">
           {data.reports.length > 0 ? (
             data.reports.map((report) => (
-              <div key={report.id} className="rounded-md border border-border p-4">
+              <div key={report.id} className={panelClass}>
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-semibold">{report.entityTitle || report.entityId}</h3>
                   <Badge variant={report.status === "pending" ? "warning" : "primary"}>
@@ -907,27 +1023,19 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       >
         <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
           <form action={sendNotification} className="grid gap-3">
-            <select
-              name="notification-target"
-              defaultValue="all"
-              className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm"
-            >
+            <select name="notification-target" defaultValue="all" className={fieldClass}>
               <option value="all">Усім профілям</option>
               <option value="users">Підтвердженим користувачам</option>
               <option value="owners">Власникам</option>
               <option value="moderators">Модераторам</option>
               <option value="admins">Адмінам</option>
             </select>
-            <input
-              name="notification-title"
-              placeholder="Заголовок"
-              className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm"
-            />
+            <input name="notification-title" placeholder="Заголовок" className={fieldClass} />
             <textarea
               name="notification-body"
               placeholder="Текст повідомлення"
               rows={5}
-              className="rounded-md border border-border bg-surface px-3 py-2 text-sm"
+              className={fieldClass}
             />
             <Button type="submit" disabled={isBusy} leftIcon={<Send aria-hidden size={16} />}>
               Надіслати
@@ -936,7 +1044,7 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
           <div className="grid gap-3">
             {data.notifications.length > 0 ? (
               data.notifications.map((notification) => (
-                <div key={notification.id} className="rounded-md border border-border p-3 text-sm">
+                <div key={notification.id} className={`${panelClass} text-sm`}>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -981,6 +1089,7 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
               "На модерації": data.stats.pendingListings,
               "Заявки власників": data.stats.ownerClaims,
               Скарги: data.stats.pendingReports,
+              Відгуки: data.stats.pendingReviews,
               "Активні оголошення": data.stats.activeListings,
               Заблоковані: data.stats.blockedUsers,
               Контент: data.stats.contentItems,
@@ -1027,13 +1136,13 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                     name={`setting-${setting.key}`}
                     defaultValue={setting.value}
                     rows={3}
-                    className="rounded-md border border-border bg-surface px-3 py-2 text-sm"
+                    className={fieldClass}
                   />
                 ) : (
                   <input
                     name={`setting-${setting.key}`}
                     defaultValue={setting.value}
-                    className="min-h-11 rounded-md border border-border bg-surface px-3 text-sm"
+                    className={fieldClass}
                   />
                 )}
                 {meta.hint ? <span className="text-xs text-muted">{meta.hint}</span> : null}

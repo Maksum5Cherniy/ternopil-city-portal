@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+  ArrowRight,
   Bell,
   Heart,
   ListChecks,
@@ -12,6 +13,7 @@ import {
   Settings,
   Store,
   UserRound,
+  type LucideIcon,
 } from "lucide-react";
 import { uk } from "@/config/dictionaries/uk";
 import { profileSchema, type ProfileInput } from "@/schemas/auth";
@@ -31,21 +33,89 @@ type ProfileUser = {
   createdAt?: string;
 };
 
-const profileSections = [
-  { title: "Обране", description: "Збережені новини, заклади, події та оголошення.", icon: Heart },
+type ProfileAction = {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  href: string;
+  action: string;
+};
+
+const primaryProfileActions: ProfileAction[] = [
+  {
+    title: "Продати на барахолці",
+    description: "Створити оголошення, пройти модерацію та керувати статусом товару.",
+    icon: PackageCheck,
+    href: "/market/new",
+    action: "Створити оголошення",
+  },
+  {
+    title: "Мої оголошення",
+    description: "Статуси модерації, причина відхилення, архів, продаж і повторна подача.",
+    icon: ListChecks,
+    href: "/profile/listings",
+    action: "Керувати",
+  },
+  {
+    title: "Заявка власника",
+    description: "Подати заявку на керування закладом або переглянути її статус.",
+    icon: Store,
+    href: "/owner",
+    action: "Подати заявку",
+  },
+];
+
+const profileSections: ProfileAction[] = [
+  {
+    title: "Обране",
+    description: "Збережені новини, заклади, події та оголошення.",
+    icon: Heart,
+    href: "/profile/favorites",
+    action: "Відкрити",
+  },
   {
     title: "Відгуки",
     description: "Власні відгуки, редагування і статус модерації.",
     icon: MessageSquare,
+    href: "/profile/reviews",
+    action: "Переглянути",
   },
   {
     title: "Сповіщення",
     description: "Статуси оголошень, модерації та відповіді.",
     icon: Bell,
     href: "/profile/notifications",
+    action: "Переглянути",
   },
-  { title: "Налаштування", description: "Профіль, пароль і видалення акаунта.", icon: Settings },
+  {
+    title: "Налаштування",
+    description: "Профіль, контакти, пароль і видалення акаунта.",
+    icon: Settings,
+    href: "#profile-settings",
+    action: "Редагувати",
+  },
 ];
+
+function ProfileActionCard({ item }: { item: ProfileAction }) {
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      className="group flex min-h-[158px] flex-col rounded-lg border border-border bg-surface p-5 transition hover:border-primary hover:bg-primary-soft hover:shadow-[var(--shadow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+    >
+      <span className="grid h-11 w-11 place-items-center rounded-md bg-primary-soft text-primary transition group-hover:bg-surface">
+        <Icon aria-hidden size={22} />
+      </span>
+      <h3 className="mt-4 font-semibold group-hover:text-primary">{item.title}</h3>
+      <p className="mt-2 flex-1 text-sm leading-6 text-muted">{item.description}</p>
+      <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
+        {item.action}
+        <ArrowRight aria-hidden size={16} />
+      </span>
+    </Link>
+  );
+}
 
 async function readError(response: Response, fallback: string) {
   const body = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -194,7 +264,11 @@ export default function ProfileClient() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-      <form action={saveProfile} className="rounded-lg border border-border bg-surface p-5">
+      <form
+        id="profile-settings"
+        action={saveProfile}
+        className="rounded-lg border border-border bg-surface p-5 shadow-[var(--shadow)]"
+      >
         <div className="flex items-start gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-md bg-primary-soft text-primary">
             <UserRound aria-hidden size={22} />
@@ -315,83 +389,30 @@ export default function ProfileClient() {
       </form>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <Link
-          href="/market/new"
-          className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
-        >
-          <PackageCheck aria-hidden size={22} className="text-primary" />
-          <h3 className="mt-3 font-semibold">Продати на барахолці</h3>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            Створити оголошення, пройти модерацію та керувати статусом товару.
-          </p>
-        </Link>
-        <Link
-          href="/profile/listings"
-          className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
-        >
-          <ListChecks aria-hidden size={22} className="text-primary" />
-          <h3 className="mt-3 font-semibold">Мої оголошення</h3>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            Статуси модерації, причина відхилення, архів, продаж і повторна подача.
-          </p>
-        </Link>
-        <Link
-          href="/owner"
-          className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
-        >
-          <Store aria-hidden size={22} className="text-primary" />
-          <h3 className="mt-3 font-semibold">Заявка власника</h3>
-          <p className="mt-1 text-sm leading-6 text-muted">
-            Подати заявку на керування закладом або переглянути її статус.
-          </p>
-        </Link>
-        {profileSections.map((section) => {
-          const Icon = section.icon;
-          const content = (
-            <>
-              <Icon aria-hidden size={22} className="text-primary" />
-              <h3 className="mt-3 font-semibold">{section.title}</h3>
-              <p className="mt-1 text-sm leading-6 text-muted">{section.description}</p>
-            </>
-          );
-
-          return section.href ? (
-            <Link
-              key={section.title}
-              href={section.href}
-              className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
-            >
-              {content}
-            </Link>
-          ) : (
-            <div key={section.title} className="rounded-lg border border-border bg-surface p-4">
-              {content}
-            </div>
-          );
-        })}
+        {[...primaryProfileActions, ...profileSections].map((item) => (
+          <ProfileActionCard key={item.title} item={item} />
+        ))}
         {user.roles.includes("moderator") || user.roles.includes("admin") ? (
-          <Link
-            href="/moderation"
-            className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
-          >
-            <Bell aria-hidden size={22} className="text-primary" />
-            <h3 className="mt-3 font-semibold">Модерація</h3>
-            <p className="mt-1 text-sm leading-6 text-muted">
-              Черга оголошень, заявок власників, скарг і журнал дій.
-            </p>
-          </Link>
+          <ProfileActionCard
+            item={{
+              title: "Модерація",
+              description: "Черга оголошень, заявок власників, відгуків, скарг і журнал дій.",
+              icon: Bell,
+              href: "/moderation",
+              action: "Відкрити чергу",
+            }}
+          />
         ) : null}
         {user.roles.includes("admin") ? (
-          <Link
-            href="/admin"
-            className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
-          >
-            <Settings aria-hidden size={22} className="text-primary" />
-            <h3 className="mt-3 font-semibold">Адмінпанель</h3>
-            <p className="mt-1 text-sm leading-6 text-muted">
-              Користувачі, ролі, блокування, модерація і системний журнал.
-            </p>
-          </Link>
+          <ProfileActionCard
+            item={{
+              title: "Адмінпанель",
+              description: "Користувачі, ролі, блокування, модерація і системний журнал.",
+              icon: Settings,
+              href: "/admin",
+              action: "Керувати",
+            }}
+          />
         ) : null}
       </div>
     </div>

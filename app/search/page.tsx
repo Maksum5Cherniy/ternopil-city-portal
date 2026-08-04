@@ -59,7 +59,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             type="search"
             defaultValue={query}
             placeholder={uk.common.searchPlaceholder}
-            className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
+            className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted"
           />
         </div>
         <button

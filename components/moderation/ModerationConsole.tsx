@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CheckCircle2, CircleSlash, EyeOff } from "lucide-react";
+import { CheckCircle2, CircleSlash, EyeOff, Star } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { getModerationDashboard } from "@/lib/database-core";
 
@@ -75,10 +75,31 @@ export default function ModerationConsole({ data }: { data: ModerationData }) {
     router.refresh();
   };
 
+  const moderateReview = async (
+    reviewId: string,
+    status: "approved" | "rejected" | "hidden" | "blocked",
+  ) => {
+    setMessage("");
+
+    const response = await fetch("/api/admin/reviews", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reviewId, status }),
+    });
+
+    if (!response.ok) {
+      setMessage(await readError(response, "Не вдалося оновити відгук."));
+      return;
+    }
+
+    setMessage("Відгук оновлено.");
+    router.refresh();
+  };
+
   return (
-    <div className="mt-8 grid gap-4 xl:grid-cols-3">
+    <div className="mt-8 grid gap-4 xl:grid-cols-2">
       {message ? (
-        <p className="rounded-md border border-primary/30 bg-primary-soft px-3 py-2 text-sm text-primary-strong xl:col-span-3">
+        <p className="rounded-md border border-primary/30 bg-primary-soft px-3 py-2 text-sm text-primary-strong xl:col-span-2">
           {message}
         </p>
       ) : null}
@@ -130,6 +151,54 @@ export default function ModerationConsole({ data }: { data: ModerationData }) {
           ))
         ) : (
           <p className="p-4 text-sm text-muted">Черга оголошень порожня.</p>
+        )}
+      </div>
+
+      <div className="overflow-hidden rounded-lg border border-border bg-surface">
+        <div className="border-b border-border p-4">
+          <h2 className="text-xl font-semibold">Відгуки</h2>
+        </div>
+        {data.reviews.length > 0 ? (
+          data.reviews.map((review) => (
+            <div key={review.id} className="border-b border-border p-4 last:border-b-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <Star aria-hidden size={17} className="text-accent-strong" />
+                <h3 className="font-semibold">{review.targetTitle}</h3>
+                <Badge variant="warning">{review.status}</Badge>
+                <Badge>{review.rating} / 5</Badge>
+              </div>
+              <p className="mt-1 text-sm text-muted">
+                {review.userName || "Користувач"} · {review.userEmail || "email приховано"}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-muted">{review.text}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => moderateReview(review.id, "approved")}
+                  className="min-h-10 rounded-md bg-primary px-3 text-sm font-semibold text-white"
+                >
+                  Схвалити
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moderateReview(review.id, "rejected")}
+                  className="min-h-10 rounded-md border border-accent bg-accent-soft px-3 text-sm font-semibold text-accent-strong"
+                >
+                  Відхилити
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moderateReview(review.id, "hidden")}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-md border border-border px-3 text-sm font-semibold"
+                >
+                  <EyeOff aria-hidden size={17} />
+                  Приховати
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="p-4 text-sm text-muted">Відгуків немає.</p>
         )}
       </div>
 

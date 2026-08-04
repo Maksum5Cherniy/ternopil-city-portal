@@ -148,14 +148,14 @@ export default async function Home() {
               <label htmlFor="home-search" className="sr-only">
                 {uk.common.search}
               </label>
-              <div className="flex min-h-12 flex-1 items-center gap-2 rounded-md bg-white px-3 text-foreground">
-                <Search aria-hidden size={18} className="shrink-0 text-muted" />
+              <div className="flex min-h-12 flex-1 items-center gap-2 rounded-md bg-white px-3 text-[#0D1B3D]">
+                <Search aria-hidden size={18} className="shrink-0 text-[#5d6680]" />
                 <input
                   id="home-search"
                   name="q"
                   type="search"
                   placeholder={uk.common.searchPlaceholder}
-                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-[#0D1B3D] outline-none placeholder:text-[#5d6680]"
                 />
               </div>
               <button

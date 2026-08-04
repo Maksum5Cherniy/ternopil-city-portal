@@ -46,6 +46,12 @@ body {
   min-width: 320px;
 }
 
+.dark body {
+  background:
+    radial-gradient(circle at 14% 0%, rgb(96 165 250 / 14%), transparent 34rem),
+    linear-gradient(180deg, #081126 0, var(--background) 34rem);
+}
+
 a {
   text-underline-offset: 0.18em;
 }
@@ -56,6 +62,21 @@ input,
 textarea,
 select {
   outline-color: var(--primary);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+  color: var(--foreground);
+  caret-color: var(--primary);
+}
+
+:where(input:not([type="checkbox"]):not([type="radio"]), textarea)::placeholder {
+  color: var(--muted);
+  opacity: 0.78;
+}
+
+:where(select option) {
+  background: var(--surface);
+  color: var(--foreground);
 }
 
 ::selection {

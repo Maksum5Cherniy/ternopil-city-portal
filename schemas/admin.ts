@@ -28,6 +28,12 @@ export const reportModerationSchema = z.object({
   comment: z.string().max(500).optional(),
 });
 
+export const reviewModerationSchema = z.object({
+  reviewId: z.string().min(1),
+  status: z.enum(["approved", "rejected", "hidden", "blocked"]),
+  comment: z.string().max(500).optional(),
+});
+
 export const adminContentTypeSchema = z.enum(["news", "place", "ad", "home"]);
 export const adminContentStatusSchema = z.enum(["draft", "published", "archived"]);
 
@@ -84,6 +90,7 @@ export type AdminUserUpdateInput = z.infer<typeof adminUserUpdateSchema>;
 export type ListingModerationInput = z.infer<typeof listingModerationSchema>;
 export type OwnerClaimModerationInput = z.infer<typeof ownerClaimModerationSchema>;
 export type ReportModerationInput = z.infer<typeof reportModerationSchema>;
+export type ReviewModerationInput = z.infer<typeof reviewModerationSchema>;
 export type AdminContentUpsertInput = z.infer<typeof adminContentUpsertSchema>;
 export type AdminContentStatusUpdateInput = z.infer<typeof adminContentStatusUpdateSchema>;
 export type AdminContentDeleteInput = z.infer<typeof adminContentDeleteSchema>;

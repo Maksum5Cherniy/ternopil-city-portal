@@ -12,6 +12,24 @@ const inter = Inter({
   display: "swap",
 });
 
+const themeInitScript = `
+(() => {
+  try {
+    const key = "ternopil-city-theme";
+    const saved = window.localStorage.getItem(key);
+    const theme =
+      saved === "dark" || saved === "light"
+        ? saved
+        : window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+  } catch {}
+})();
+`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
   title: {
@@ -72,6 +90,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className={`${inter.variable} min-h-full bg-background font-sans text-foreground`}>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
           <div className="flex min-h-screen flex-col">
             <Header />

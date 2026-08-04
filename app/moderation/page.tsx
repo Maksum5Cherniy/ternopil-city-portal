@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Flag, ListChecks, ShieldAlert } from "lucide-react";
+import { Flag, ListChecks, ShieldAlert, Star } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import ModerationConsole from "@/components/moderation/ModerationConsole";
@@ -70,7 +70,7 @@ export default async function ModerationPage() {
         Модератори перевіряють оголошення, заявки власників, скарги й зміни закладів. Кожна дія
         записується в журнал.
       </p>
-      <div className="mt-8 grid gap-3 sm:grid-cols-3">
+      <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-lg border border-border bg-surface p-5">
           <ListChecks aria-hidden size={24} className="text-primary" />
           <div className="mt-3 text-2xl font-semibold">{data.listings.length}</div>
@@ -85,6 +85,11 @@ export default async function ModerationPage() {
           <Flag aria-hidden size={24} className="text-accent-strong" />
           <div className="mt-3 text-2xl font-semibold">{data.reports.length}</div>
           <p className="text-sm text-muted">скарг очікують рішення</p>
+        </div>
+        <div className="rounded-lg border border-border bg-surface p-5">
+          <Star aria-hidden size={24} className="text-accent-strong" />
+          <div className="mt-3 text-2xl font-semibold">{data.reviews.length}</div>
+          <p className="text-sm text-muted">відгуків очікують рішення</p>
         </div>
       </div>
       <ModerationConsole data={data} />

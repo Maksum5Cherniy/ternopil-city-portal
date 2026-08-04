@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, CalendarDays, MapPin, Star } from "lucide-react";
+import FavoriteButton from "@/components/content/FavoriteButton";
 import { Badge } from "@/components/ui/Badge";
 import type { PortalEntity } from "@/constants/content";
 
@@ -85,6 +86,18 @@ export function DetailPage({
             Додати в обране, поскаржитися, перейти до маршруту або зв&apos;язатися через вказані
             контакти.
           </p>
+          <div className="mt-4">
+            <FavoriteButton
+              item={{
+                href: item.href,
+                title: item.title,
+                description: item.description,
+                type: item.meta || item.category,
+                meta: item.price || item.date || item.address,
+                badge: item.badge,
+              }}
+            />
+          </div>
         </div>
         <div>
           <h2 className="font-semibold">Модерація</h2>

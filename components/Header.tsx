@@ -57,14 +57,14 @@ export default function Header() {
             </Link>
             <Link
               href="/profile"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-primary bg-primary px-3 text-sm font-semibold text-white transition hover:bg-primary-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-primary bg-primary px-3 text-sm font-semibold text-white transition hover:bg-primary-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <UserRound aria-hidden size={17} />
               <span>{uk.common.profile}</span>
             </Link>
             <Link
               href="/market/new"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-accent bg-accent px-3 text-sm font-semibold text-[#0D1B3D] transition hover:bg-[#f1ae16] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="inline-flex min-h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-accent bg-accent px-3 text-sm font-semibold text-[#0D1B3D] transition hover:bg-[#f1ae16] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <Plus aria-hidden size={17} />
               <span>{uk.common.addListing}</span>

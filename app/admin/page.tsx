@@ -141,6 +141,7 @@ export default async function AdminPage() {
     { label: "На модерації", value: String(dashboard.stats.pendingListings) },
     { label: "Заявки власників", value: String(dashboard.stats.ownerClaims) },
     { label: "Скарги", value: String(dashboard.stats.pendingReports) },
+    { label: "Відгуки", value: String(dashboard.stats.pendingReviews) },
     { label: "Активні оголошення", value: String(dashboard.stats.activeListings) },
     { label: "Заблоковані", value: String(dashboard.stats.blockedUsers) },
     { label: "Контент", value: String(dashboard.stats.contentItems) },
@@ -148,7 +149,10 @@ export default async function AdminPage() {
   ];
 
   return (
-    <section className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+    <section
+      id="admin-top"
+      className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8"
+    >
       <div className="flex flex-col gap-4 border-b border-border pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <Badge variant="warning">Admin</Badge>
@@ -180,9 +184,9 @@ export default async function AdminPage() {
             <a
               key={section.title}
               href={`#${section.id}`}
-              className="rounded-lg border border-border bg-surface p-5 transition hover:border-primary hover:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="group flex min-h-[132px] flex-col rounded-lg border border-border bg-surface p-5 transition hover:border-primary hover:bg-primary-soft hover:shadow-[var(--shadow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-              <div className="flex items-start gap-3">
+              <div className="flex flex-1 items-start gap-3">
                 <span className="grid h-11 w-11 place-items-center rounded-md bg-primary-soft text-primary">
                   <Icon aria-hidden size={22} />
                 </span>
@@ -191,6 +195,7 @@ export default async function AdminPage() {
                   <p className="mt-1 text-sm leading-6 text-muted">{section.description}</p>
                 </div>
               </div>
+              <span className="mt-4 text-sm font-semibold text-primary">Відкрити розділ</span>
             </a>
           );
         })}

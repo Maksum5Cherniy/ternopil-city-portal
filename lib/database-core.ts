@@ -176,6 +176,22 @@ export type ReportSummary = {
   updatedAt: string;
 };
 
+export type ReviewSummary = {
+  id: string;
+  userId: string;
+  userName?: string;
+  userEmail?: string;
+  targetHref: string;
+  targetTitle: string;
+  rating: number;
+  text: string;
+  ownerReply?: string;
+  status: ModerationStatus;
+  moderationComment?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type NotificationSummary = {
   id: string;
   type: string;
@@ -221,6 +237,7 @@ export type AdminDashboardData = {
     pendingListings: number;
     ownerClaims: number;
     pendingReports: number;
+    pendingReviews: number;
     activeListings: number;
     blockedUsers: number;
     contentItems: number;
@@ -230,6 +247,7 @@ export type AdminDashboardData = {
   listings: ListingModerationItem[];
   ownerClaims: OwnerClaimSummary[];
   reports: ReportSummary[];
+  reviews: ReviewSummary[];
   auditLogs: AuditLogSummary[];
   contentItems: AdminContentItemSummary[];
   settings: SiteSettingSummary[];
@@ -483,6 +501,22 @@ async function createSchema() {
     `;
 
     await sql`
+      CREATE TABLE IF NOT EXISTS reviews (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        target_href TEXT NOT NULL,
+        target_title TEXT NOT NULL,
+        rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+        text TEXT NOT NULL,
+        owner_reply TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        moderation_comment TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+
+    await sql`
       CREATE TABLE IF NOT EXISTS notifications (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -541,6 +575,9 @@ async function createSchema() {
     await sql`CREATE INDEX IF NOT EXISTS owner_claims_status_idx ON owner_claims (status, created_at)`;
     await sql`CREATE INDEX IF NOT EXISTS reports_status_idx ON reports (status, created_at)`;
     await sql`CREATE INDEX IF NOT EXISTS reports_entity_idx ON reports (entity_type, entity_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS reviews_user_idx ON reviews (user_id, created_at DESC)`;
+    await sql`CREATE INDEX IF NOT EXISTS reviews_target_idx ON reviews (target_href, status, created_at DESC)`;
+    await sql`CREATE INDEX IF NOT EXISTS reviews_status_idx ON reviews (status, created_at DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, read_at, created_at DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON audit_logs (created_at DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS users_roles_idx ON users USING GIN (roles)`;
@@ -759,6 +796,38 @@ function toReportSummary(row: {
     entityId: row.entity_id,
     entityTitle: row.entity_title || undefined,
     reason: row.reason,
+    status: row.status,
+    moderationComment: row.moderation_comment || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toReviewSummary(row: {
+  id: string;
+  user_id: string;
+  user_name?: string | null;
+  user_email?: string | null;
+  target_href: string;
+  target_title: string;
+  rating: string | number;
+  text: string;
+  owner_reply: string | null;
+  status: ModerationStatus;
+  moderation_comment: string | null;
+  created_at: string;
+  updated_at: string;
+}): ReviewSummary {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    userName: row.user_name || undefined,
+    userEmail: row.user_email || undefined,
+    targetHref: row.target_href,
+    targetTitle: row.target_title,
+    rating: Number(row.rating),
+    text: row.text,
+    ownerReply: row.owner_reply || undefined,
     status: row.status,
     moderationComment: row.moderation_comment || undefined,
     createdAt: row.created_at,
@@ -1486,6 +1555,188 @@ async function getReportById(reportId: string) {
   return rows[0] ? toReportSummary(rows[0]) : null;
 }
 
+export async function createReview(input: {
+  userId: string;
+  targetHref: string;
+  targetTitle: string;
+  rating: number;
+  text: string;
+}) {
+  await ensureDatabaseSchema();
+
+  const id = randomUUID();
+
+  await getSql().query(
+    `
+      INSERT INTO reviews (id, user_id, target_href, target_title, rating, text)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `,
+    [
+      id,
+      input.userId,
+      sanitizeText(input.targetHref, 300),
+      sanitizeText(input.targetTitle, 160),
+      Math.min(5, Math.max(1, Math.round(input.rating))),
+      sanitizeText(input.text, 2000),
+    ],
+  );
+
+  await writeAuditLog({
+    actorId: input.userId,
+    action: "review.created",
+    entityType: "review",
+    entityId: id,
+    details: { targetHref: input.targetHref, targetTitle: input.targetTitle },
+  });
+
+  return id;
+}
+
+export async function getUserReviews(userId: string, limit = 30): Promise<ReviewSummary[]> {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      SELECT
+        r.*,
+        u.display_name AS user_name,
+        u.email AS user_email
+      FROM reviews r
+      JOIN users u ON u.id = r.user_id
+      WHERE r.user_id = $1
+      ORDER BY r.created_at DESC
+      LIMIT $2
+    `,
+    [userId, limit],
+  )) as Array<{
+    id: string;
+    user_id: string;
+    user_name: string | null;
+    user_email: string | null;
+    target_href: string;
+    target_title: string;
+    rating: string | number;
+    text: string;
+    owner_reply: string | null;
+    status: ModerationStatus;
+    moderation_comment: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+
+  return rows.map(toReviewSummary);
+}
+
+export async function getPublicReviews(targetHref: string, limit = 12): Promise<ReviewSummary[]> {
+  if (!isDatabaseConfigured()) {
+    return [];
+  }
+
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      SELECT
+        r.*,
+        u.display_name AS user_name,
+        NULL::TEXT AS user_email
+      FROM reviews r
+      JOIN users u ON u.id = r.user_id
+      WHERE r.target_href = $1
+        AND r.status = 'approved'
+      ORDER BY r.created_at DESC
+      LIMIT $2
+    `,
+    [sanitizeText(targetHref, 300), limit],
+  )) as Array<{
+    id: string;
+    user_id: string;
+    user_name: string | null;
+    user_email: string | null;
+    target_href: string;
+    target_title: string;
+    rating: string | number;
+    text: string;
+    owner_reply: string | null;
+    status: ModerationStatus;
+    moderation_comment: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+
+  return rows.map(toReviewSummary);
+}
+
+async function getReviews(limit = 25): Promise<ReviewSummary[]> {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      SELECT
+        r.*,
+        u.display_name AS user_name,
+        u.email AS user_email
+      FROM reviews r
+      JOIN users u ON u.id = r.user_id
+      ORDER BY
+        CASE WHEN r.status = 'pending' THEN 0 ELSE 1 END,
+        r.created_at DESC
+      LIMIT $1
+    `,
+    [limit],
+  )) as Array<{
+    id: string;
+    user_id: string;
+    user_name: string | null;
+    user_email: string | null;
+    target_href: string;
+    target_title: string;
+    rating: string | number;
+    text: string;
+    owner_reply: string | null;
+    status: ModerationStatus;
+    moderation_comment: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+
+  return rows.map(toReviewSummary);
+}
+
+async function getReviewById(reviewId: string) {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      SELECT
+        r.*,
+        u.display_name AS user_name,
+        u.email AS user_email
+      FROM reviews r
+      JOIN users u ON u.id = r.user_id
+      WHERE r.id = $1
+      LIMIT 1
+    `,
+    [reviewId],
+  )) as Array<{
+    id: string;
+    user_id: string;
+    user_name: string | null;
+    user_email: string | null;
+    target_href: string;
+    target_title: string;
+    rating: string | number;
+    text: string;
+    owner_reply: string | null;
+    status: ModerationStatus;
+    moderation_comment: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+
+  return rows[0] ? toReviewSummary(rows[0]) : null;
+}
+
 export async function getAdminDashboard(): Promise<AdminDashboardData> {
   await ensureDatabaseSchema();
 
@@ -1549,6 +1800,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     }>
   >;
   const reportsPromise = getReports(25);
+  const reviewsPromise = getReviews(25);
   const contentPromise = sql.query(
     `
         SELECT *
@@ -1616,6 +1868,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
           (SELECT COUNT(*)::INT FROM listings WHERE moderation_status = 'pending') AS pending_listings,
           (SELECT COUNT(*)::INT FROM owner_claims WHERE status = 'pending') AS owner_claims,
           (SELECT COUNT(*)::INT FROM reports WHERE status = 'pending') AS pending_reports,
+          (SELECT COUNT(*)::INT FROM reviews WHERE status = 'pending') AS pending_reviews,
           (SELECT COUNT(*)::INT FROM listings WHERE status = 'active') AS active_listings,
           (SELECT COUNT(*)::INT FROM users WHERE is_blocked = TRUE) AS blocked_users,
           (SELECT COUNT(*)::INT FROM admin_content_items) AS content_items,
@@ -1627,6 +1880,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
       pending_listings: number;
       owner_claims: number;
       pending_reports: number;
+      pending_reviews: number;
       active_listings: number;
       blocked_users: number;
       content_items: number;
@@ -1639,6 +1893,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     ownerClaims,
     auditLogs,
     reports,
+    reviews,
     contentRows,
     settingRows,
     notifications,
@@ -1649,6 +1904,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     ownerClaimsPromise,
     auditLogsPromise,
     reportsPromise,
+    reviewsPromise,
     contentPromise,
     settingsPromise,
     notificationsPromise,
@@ -1659,6 +1915,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     pending_listings: 0,
     owner_claims: 0,
     pending_reports: 0,
+    pending_reviews: 0,
     active_listings: 0,
     blocked_users: 0,
     content_items: 0,
@@ -1672,6 +1929,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
       pendingListings: Number(stats.pending_listings),
       ownerClaims: Number(stats.owner_claims),
       pendingReports: Number(stats.pending_reports),
+      pendingReviews: Number(stats.pending_reviews),
       activeListings: Number(stats.active_listings),
       blockedUsers: Number(stats.blocked_users),
       contentItems: Number(stats.content_items),
@@ -1694,6 +1952,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     })),
     ownerClaims: ownerClaims.map(toOwnerClaimSummary),
     reports,
+    reviews,
     auditLogs: auditLogs.map(toAuditLogSummary),
     contentItems: contentRows.map(toAdminContentItemSummary),
     settings: defaultSiteSettings.map((setting) => savedSettings.get(setting.key) || setting),
@@ -1708,6 +1967,7 @@ export async function getModerationDashboard() {
     listings: adminData.listings.filter((listing) => listing.moderationStatus === "pending"),
     ownerClaims: adminData.ownerClaims.filter((claim) => claim.status === "pending"),
     reports: adminData.reports.filter((report) => report.status === "pending"),
+    reviews: adminData.reviews.filter((review) => review.status === "pending"),
     auditLogs: adminData.auditLogs,
   };
 }
@@ -2255,6 +2515,51 @@ export async function moderateReport(input: {
   });
 
   return getReportById(input.reportId);
+}
+
+export async function moderateReview(input: {
+  actorId: string;
+  reviewId: string;
+  status: Extract<ModerationStatus, "approved" | "rejected" | "hidden" | "blocked">;
+  comment?: string;
+}) {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      UPDATE reviews
+      SET status = $2,
+          moderation_comment = NULLIF($3, ''),
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING user_id, target_title
+    `,
+    [input.reviewId, input.status, sanitizeText(input.comment, 500)],
+  )) as Array<{ user_id: string; target_title: string }>;
+  const review = rows[0] || null;
+
+  if (!review) {
+    return null;
+  }
+
+  await createNotification({
+    userId: review.user_id,
+    type: "review_moderation",
+    title: "Статус відгуку оновлено",
+    body:
+      input.status === "approved"
+        ? `Відгук до "${review.target_title}" схвалено.`
+        : `Відгук до "${review.target_title}" має статус: ${input.status}.`,
+  });
+  await writeAuditLog({
+    actorId: input.actorId,
+    action: "review.moderated",
+    entityType: "review",
+    entityId: input.reviewId,
+    details: { status: input.status, targetTitle: review.target_title },
+  });
+
+  return getReviewById(input.reviewId);
 }
 
 export async function getListingCardsFromDatabase(limit = 24): Promise<HomeCard[]> {

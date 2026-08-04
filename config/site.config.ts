@@ -10,7 +10,7 @@ export const SITE = {
   defaultLanguage: "uk",
   cityName: "Тернопіль",
   domainLabel: process.env.NEXT_PUBLIC_SITE_DOMAIN_LABEL || "de-ternopil.ua",
-  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@example.com",
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@deternopil.pp.ua",
   mapTileServer:
     process.env.NEXT_PUBLIC_MAP_TILE_SERVER || "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   assets: {
