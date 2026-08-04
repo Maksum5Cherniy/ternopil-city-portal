@@ -8,10 +8,15 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { firebaseAuth, isFirebaseConfigured } from "@/firebase/firebaseClient";
 import { loginSchema, type LoginInput } from "@/schemas/auth";
 import { uk } from "@/config/dictionaries/uk";
+import { syncSessionCookie } from "./sessionCookie";
 
 type LoginFormValues = LoginInput;
 
-export default function LoginForm() {
+function needsServerSession(path: string) {
+  return path === "/admin" || path.startsWith("/admin/");
+}
+
+export default function LoginForm({ redirectTo = "/profile" }: { redirectTo?: string }) {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
@@ -52,9 +57,23 @@ export default function LoginForm() {
     }
 
     try {
-      await signInWithEmailAndPassword(firebaseAuth, parsed.data.email, parsed.data.password);
+      const credential = await signInWithEmailAndPassword(
+        firebaseAuth,
+        parsed.data.email,
+        parsed.data.password,
+      );
+
+      try {
+        await syncSessionCookie(credential.user);
+      } catch (error) {
+        if (needsServerSession(redirectTo)) {
+          throw error;
+        }
+      }
+
       setMessage(uk.auth.loginSuccess);
-      router.push("/profile");
+      router.push(redirectTo);
+      router.refresh();
     } catch (error) {
       setIsError(true);
       setMessage(error instanceof Error ? error.message : "Не вдалося увійти.");

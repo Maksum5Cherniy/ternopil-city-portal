@@ -8,6 +8,7 @@
 - Detail pages: окремі SEO-сторінки для контенту й оголошень.
 - Auth: реєстрація, вхід, відновлення пароля, профіль.
 - Кабінети: user profile, owner cabinet, moderation queue, admin dashboard.
+- Server-side guard для `/admin`: httpOnly session cookie, Firebase Admin verification, роль `admin` із Firestore/custom claims.
 - Market: створення оголошення авторизованим користувачем, статус `pending`, базові поля модерації.
 - Firebase: client/admin wrappers, rules, storage rules, indexes, seed script.
 - SEO: metadata, sitemap, robots, Open Graph, structured data, 404/500.
@@ -15,7 +16,7 @@
 
 ## Production-доробки після підключення реального Firebase
 
-- Server-side role guards для `/admin`, `/owner`, `/moderation`.
+- Server-side role guards для `/owner` і `/moderation`.
 - CRUD-екрани адмінки для users, roles, categories, homepage sections, ads і audit logs.
 - Realtime/query-backed списки замість static seed data.
 - Повний Leaflet/OpenStreetMap runtime з кластеризацією.

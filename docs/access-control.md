@@ -41,8 +41,10 @@ Profile creation flow:
 1. `/register` creates a Firebase Authentication user.
 2. The client creates `users/{uid}` with base public profile fields.
 3. The default role is `user`.
-4. Stage 2 must lock role changes through Firestore Rules or server actions so clients cannot
-   promote themselves.
+4. Login/register sync the Firebase ID token to `/api/auth/session`, which creates the httpOnly
+   `de_ternopil_session` cookie for server-side page checks.
+5. Role changes must stay protected through Firestore Rules, server actions or Admin SDK scripts so
+   clients cannot promote themselves.
 
 ## Owner
 
@@ -91,7 +93,8 @@ Every important admin action writes to `auditLogs`.
 
 Security layers:
 
-1. Server role check in route handlers/server actions.
+1. Server role check in route handlers/server actions. `/admin` already verifies the session cookie
+   through Firebase Admin SDK before rendering.
 2. Zod validation before every write.
 3. Repository ownership checks before mutations.
 4. Firestore Rules as client-access boundary.

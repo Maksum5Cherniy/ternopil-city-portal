@@ -8,7 +8,28 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function LoginPage() {
+function getSafeRedirect(value: string | string[] | undefined) {
+  const redirectTo = Array.isArray(value) ? value[0] : value;
+
+  if (!redirectTo || !redirectTo.startsWith("/") || redirectTo.startsWith("//")) {
+    return "/profile";
+  }
+
+  if (redirectTo.startsWith("/api/")) {
+    return "/profile";
+  }
+
+  return redirectTo;
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
+  const { next } = await searchParams;
+  const redirectTo = getSafeRedirect(next);
+
   return (
     <section className="mx-auto grid w-full max-w-[920px] gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[0.8fr_1.2fr] lg:px-8">
       <div>
@@ -16,7 +37,7 @@ export default function LoginPage() {
         <p className="mt-4 text-base leading-8 text-muted">{uk.auth.loginDescription}</p>
       </div>
       <div className="rounded-lg border border-border bg-surface p-5 shadow-[var(--shadow)]">
-        <LoginForm />
+        <LoginForm redirectTo={redirectTo} />
       </div>
     </section>
   );

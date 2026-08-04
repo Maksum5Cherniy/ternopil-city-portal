@@ -9,6 +9,7 @@ import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 import { firebaseAuth, firebaseDb, isFirebaseConfigured } from "@/firebase/firebaseClient";
 import { registerSchema, type RegisterInput } from "@/schemas/auth";
 import { uk } from "@/config/dictionaries/uk";
+import { syncSessionCookie } from "./sessionCookie";
 
 type RegisterFormValues = RegisterInput;
 
@@ -92,8 +93,10 @@ export default function RegisterForm() {
         updatedAt: serverTimestamp(),
       });
 
+      await syncSessionCookie(credential.user).catch(() => undefined);
       setStatus("success");
       setMessage(uk.auth.profileCreated);
+      router.refresh();
       router.push("/profile");
     } catch (error) {
       setStatus("error");

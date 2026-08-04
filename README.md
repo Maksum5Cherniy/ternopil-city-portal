@@ -9,7 +9,7 @@
 - Публічні сторінки: `/`, `/news`, `/places`, `/locations`, `/events`, `/map`, `/market`, `/search`, `/contacts`, `/privacy`, `/terms`.
 - Детальні сторінки для новин, закладів, локацій, подій і оголошень: `/news/[slug]`, `/places/[slug]`, `/locations/[slug]`, `/events/[slug]`, `/market/[slug]`.
 - Реєстрація, вхід, відновлення пароля та профіль: `/register`, `/login`, `/forgot-password`, `/profile`.
-- Адмін-панель і службові кабінети: `/admin`, `/owner`, `/moderation`.
+- Адмін-панель із server-side перевіркою ролі `admin`: `/admin`; службові кабінети: `/owner`, `/moderation`.
 - Створення оголошень користувачами: `/market/new` з Firebase Auth + Firestore write flow.
 - Firestore/Storage rules, індекси, Firebase config і seed script.
 - SEO: metadata, Open Graph, sitemap, robots, structured data на detail pages, 404/500/error screens.
@@ -18,12 +18,22 @@
 ## Як люди створюють профілі
 
 1. Користувач відкриває `/register`.
-2. Вводить імʼя, email, телефон, тип профілю та пароль.
+2. Вводить назву профілю, email, пароль і приймає правила.
 3. Firebase Authentication створює акаунт.
 4. Після цього у Firestore створюється документ `users/{uid}` зі статусом `active`, роллю `user` і публічним профілем.
-5. Користувач переходить у `/profile`, а для оголошень використовує `/market/new`.
+5. Користувач переходить у `/profile`, де може додати телефон і соцмережі; для оголошень використовує `/market/new`.
 
 Для реальної роботи цього flow потрібен налаштований Firebase-проєкт і `.env.local`.
+
+## Як працює доступ до адмін-панелі
+
+1. Користувач входить через `/login`.
+2. Клієнт передає Firebase ID token у `/api/auth/session`.
+3. Сервер створює httpOnly cookie `de_ternopil_session`.
+4. `/admin` перевіряє cookie через Firebase Admin SDK і читає ролі з `users/{uid}`, `userRoles/{uid}` або custom claims.
+5. Без сесії користувача перенаправляє на `/login?next=/admin`; без ролі `admin` показується сторінка відмови в доступі.
+
+Для роботи цього захисту на Vercel треба заповнити `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL` і `FIREBASE_PRIVATE_KEY`.
 
 ## Запуск
 
@@ -65,5 +75,6 @@ firebase deploy --only firestore:rules,firestore:indexes,storage
 ## Відомі обмеження
 
 - Публічні дані зараз seed/static-ready; реальна адмінська CRUD-робота потребує підключеного Firebase-проєкту.
+- `/owner` і `/moderation` поки мають UI-структуру; server-side guards для них залишені наступним етапом після `/admin`.
 - Карта має UI-підготовку; повноцінний Leaflet/OpenStreetMap runtime можна підключати поверх наявної структури.
 - `npm audit --omit=dev` показує moderate transitive advisory у ланцюжку `firebase-admin`; безпечний non-force fix наразі недоступний, force downgrade не застосовано.

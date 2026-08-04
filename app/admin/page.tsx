@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { uk } from "@/config/dictionaries/uk";
+import { getCurrentServerSession, hasServerRole } from "@/lib/auth-session";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Адміністративна панель",
@@ -24,6 +26,8 @@ export const metadata: Metadata = {
     follow: false,
   },
 };
+
+export const dynamic = "force-dynamic";
 
 const stats = [
   { label: "На модерації", value: "24" },
@@ -47,7 +51,52 @@ const adminSections = [
   { title: "Налаштування", description: "SEO, бренд, системні параметри.", icon: Settings },
 ];
 
-export default function AdminPage() {
+function AdminAccessDenied({ title, description }: { title: string; description: string }) {
+  return (
+    <section className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <div className="rounded-lg border border-accent/40 bg-accent-soft p-6">
+        <Badge variant="warning">403</Badge>
+        <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-5xl">{title}</h1>
+        <p className="mt-4 max-w-3xl text-base leading-8 text-muted">{description}</p>
+      </div>
+    </section>
+  );
+}
+
+export default async function AdminPage() {
+  const session = await getCurrentServerSession();
+
+  if (session.status === "signedOut" || session.status === "invalid") {
+    redirect("/login?next=/admin");
+  }
+
+  if (session.status === "firebaseAdminMissing") {
+    return (
+      <AdminAccessDenied
+        title="Server-side доступ не налаштований"
+        description="Адмінпанель закрита. Додайте Firebase Admin змінні у Vercel, щоб сервер міг перевіряти session cookie та роль admin."
+      />
+    );
+  }
+
+  if (session.status === "blocked") {
+    return (
+      <AdminAccessDenied
+        title="Профіль заблокований"
+        description="Цей акаунт не може відкривати адміністративну панель."
+      />
+    );
+  }
+
+  if (!hasServerRole(session, "admin")) {
+    return (
+      <AdminAccessDenied
+        title="Недостатньо прав"
+        description="Доступ до адміністративної панелі дозволений тільки користувачам із роллю admin."
+      />
+    );
+  }
+
   return (
     <section className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="flex flex-col gap-4 border-b border-border pb-6 lg:flex-row lg:items-end lg:justify-between">
@@ -59,7 +108,8 @@ export default function AdminPage() {
           <p className="mt-4 max-w-3xl text-base leading-8 text-muted">{uk.admin.description}</p>
         </div>
         <div className="rounded-lg border border-accent/40 bg-accent-soft p-4 text-sm leading-6 text-accent-strong lg:max-w-sm">
-          {uk.admin.accessNote}
+          Доступ підтверджено server-side: session cookie перевірено через Firebase Admin, роль
+          admin прочитано з Firestore.
         </div>
       </div>
 

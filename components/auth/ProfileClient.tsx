@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { User } from "firebase/auth";
 import { onAuthStateChanged, signOut, updateProfile } from "firebase/auth";
@@ -9,6 +10,7 @@ import { Bell, Heart, MessageSquare, PackageCheck, Settings, Store, UserRound } 
 import { firebaseAuth, firebaseDb, isFirebaseConfigured } from "@/firebase/firebaseClient";
 import { uk } from "@/config/dictionaries/uk";
 import { profileSchema, type ProfileInput } from "@/schemas/auth";
+import { clearSessionCookie } from "./sessionCookie";
 
 type FirestoreUserProfile = {
   displayName?: string;
@@ -39,6 +41,7 @@ const profileSections = [
 ];
 
 export default function ProfileClient() {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<FirestoreUserProfile | null>(null);
   const [loading, setLoading] = useState(isFirebaseConfigured);
@@ -250,10 +253,13 @@ export default function ProfileClient() {
           <button
             type="button"
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 text-sm font-semibold"
-            onClick={() => {
+            onClick={async () => {
               if (firebaseAuth) {
-                void signOut(firebaseAuth);
+                await signOut(firebaseAuth);
               }
+
+              await clearSessionCookie();
+              router.refresh();
             }}
           >
             {uk.common.logout}

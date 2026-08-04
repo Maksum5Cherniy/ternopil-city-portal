@@ -8,6 +8,14 @@
 4. Додати Environment Variables з `.env.example`.
 5. Для service account краще зберігати приватний ключ у змінній `FIREBASE_PRIVATE_KEY` з escaped line breaks.
 
+Мінімум для server-side доступу до `/admin`:
+
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+
+Без цих змінних сторінка `/admin` залишається закритою і показує повідомлення про відсутню Firebase Admin конфігурацію.
+
 ## Firebase
 
 ```bash
