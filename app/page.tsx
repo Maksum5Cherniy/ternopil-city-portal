@@ -16,7 +16,6 @@ import { Badge } from "@/components/ui/Badge";
 import { LinkButton } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import {
-  cityStats,
   latestNews,
   marketHighlights,
   popularLocations,
@@ -185,17 +184,6 @@ export default async function Home() {
               })}
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="border-b border-border bg-surface">
-        <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8">
-          {cityStats.map((stat) => (
-            <div key={stat.label} className="bg-surface px-4 py-5">
-              <div className="text-2xl font-semibold text-info">{stat.value}</div>
-              <div className="mt-1 text-sm text-muted">{stat.label}</div>
-            </div>
-          ))}
         </div>
       </section>
 

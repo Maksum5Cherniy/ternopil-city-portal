@@ -22,13 +22,6 @@ export type PortalEntity = HomeCard & {
   contactPreference?: string;
 };
 
-export const cityStats = [
-  { label: "розділів", value: "11" },
-  { label: "типів ролей", value: "5" },
-  { label: "ключових колекцій", value: "18+" },
-  { label: "підхід", value: "mobile-first" },
-];
-
 export const newsCategories = [
   { slug: "misto", title: "Місто" },
   { slug: "podii", title: "Події" },
