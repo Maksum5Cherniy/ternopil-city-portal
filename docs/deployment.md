@@ -29,7 +29,11 @@ NIC.UA registrar nameservers are configured for Vercel DNS:
 - `ns1.vercel-dns.com`
 - `ns2.vercel-dns.com`
 
-Vercel DNS contains the website ALIAS records and Resend email records. Resend domain `deternopil.pp.ua` is verified.
+Vercel DNS contains the website ALIAS records, Resend email records and DMARC:
+
+- `_dmarc.deternopil.pp.ua` TXT `v=DMARC1; p=none; pct=100`
+
+Resend domain `deternopil.pp.ua` is verified.
 
 Мінімум для server-side доступу до `/admin`:
 
