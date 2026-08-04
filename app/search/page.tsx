@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 import { allSearchItems } from "@/constants/content";
 import { uk } from "@/config/dictionaries/uk";
 import { searchListingCardsFromDatabase } from "@/lib/database";
+import { getPublishedAdminPortalEntities } from "@/lib/public-content";
 
 export const metadata: Metadata = {
   title: "Пошук",
@@ -20,11 +21,22 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const rawQuery = params?.q;
   const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery || "").trim().toLowerCase();
+  const adminItems = (await getPublishedAdminPortalEntities(undefined, 80)).map((item) => ({
+    ...item,
+    type:
+      item.category === "news"
+        ? "Новини"
+        : item.category === "place"
+          ? "Заклади"
+          : item.category === "ad"
+            ? "Реклама"
+            : "Головна",
+  }));
   const staticResults = query
-    ? allSearchItems.filter((item) =>
+    ? [...adminItems, ...allSearchItems].filter((item) =>
         `${item.title} ${item.description} ${item.meta || ""}`.toLowerCase().includes(query),
       )
-    : allSearchItems;
+    : [...adminItems, ...allSearchItems];
   const databaseListingItems = (await searchListingCardsFromDatabase(query).catch(() => [])).map(
     (item) => ({ ...item, type: "Барахолка" }),
   );

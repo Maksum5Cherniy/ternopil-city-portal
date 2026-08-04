@@ -24,6 +24,8 @@ import {
 } from "@/constants/content";
 import { uk } from "@/config/dictionaries/uk";
 import { SITE } from "@/config/site.config";
+import { getPublishedAdminPortalEntities, mergePortalEntities } from "@/lib/public-content";
+import type { HomeCard } from "@/types";
 
 const quickLinks = [
   { href: "/news", label: uk.home.latestNews, icon: Newspaper },
@@ -61,7 +63,7 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
   );
 }
 
-function CompactCardList({ items }: { items: typeof latestNews }) {
+function CompactCardList({ items }: { items: HomeCard[] }) {
   return (
     <div className="grid gap-3">
       {items.map((item) => (
@@ -95,7 +97,20 @@ function CompactCardList({ items }: { items: typeof latestNews }) {
   );
 }
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [adminNewsItems, adminPlaceItems, adminHomeItems, adminAdItems] = await Promise.all([
+    getPublishedAdminPortalEntities("news", 6),
+    getPublishedAdminPortalEntities("place", 6),
+    getPublishedAdminPortalEntities("home", 6),
+    getPublishedAdminPortalEntities("ad", 6),
+  ]);
+  const homepageNews = mergePortalEntities(adminNewsItems, latestNews).slice(0, 3);
+  const homepagePlaces = mergePortalEntities(adminPlaceItems, popularPlaces).slice(0, 3);
+  const homepageBlocks = adminHomeItems.slice(0, 3);
+  const homepageAds = adminAdItems.slice(0, 3);
+
   return (
     <>
       <script
@@ -187,7 +202,7 @@ export default function Home() {
         <div className="mx-auto grid w-full max-w-[1180px] gap-8 px-4 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
           <div>
             <SectionHeader title={uk.home.latestNews} href="/news" />
-            <CompactCardList items={latestNews} />
+            <CompactCardList items={homepageNews} />
           </div>
 
           <Card className="bg-surface-subtle shadow-none">
@@ -230,11 +245,20 @@ export default function Home() {
         </div>
       </section>
 
+      {homepageBlocks.length > 0 ? (
+        <section className="border-b border-border bg-surface py-10 sm:py-14">
+          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8">
+            <SectionHeader title="Вибране на головній" href="/search" />
+            <CompactCardList items={homepageBlocks} />
+          </div>
+        </section>
+      ) : null}
+
       <section className="border-y border-border bg-surface py-10 sm:py-14">
         <div className="mx-auto grid w-full max-w-[1180px] gap-8 px-4 sm:px-6 lg:grid-cols-3 lg:px-8">
           <div>
             <SectionHeader title={uk.home.popularPlaces} href="/places" />
-            <CompactCardList items={popularPlaces} />
+            <CompactCardList items={homepagePlaces} />
           </div>
           <div>
             <SectionHeader title="Локації" href="/locations" />
@@ -246,6 +270,15 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {homepageAds.length > 0 ? (
+        <section className="border-b border-border bg-background py-10 sm:py-14">
+          <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6 lg:px-8">
+            <SectionHeader title="Реклама" href="/contacts" />
+            <CompactCardList items={homepageAds} />
+          </div>
+        </section>
+      ) : null}
 
       <section className="bg-background py-10 sm:py-14">
         <div className="mx-auto grid w-full max-w-[1180px] gap-6 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">

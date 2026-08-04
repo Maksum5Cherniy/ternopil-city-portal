@@ -1827,6 +1827,45 @@ export async function updateAdminContentStatus(input: {
   return item;
 }
 
+export async function getPublishedAdminContentItems(
+  input: {
+    type?: AdminContentType;
+    limit?: number;
+  } = {},
+) {
+  if (!isDatabaseConfigured()) {
+    return [];
+  }
+
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      SELECT *
+      FROM admin_content_items
+      WHERE status = 'published'
+        AND ($1::TEXT IS NULL OR type = $1)
+      ORDER BY order_index ASC, updated_at DESC
+      LIMIT $2
+    `,
+    [input.type || null, input.limit || 50],
+  )) as Array<{
+    id: string;
+    type: string;
+    title: string;
+    summary: string | null;
+    href: string | null;
+    status: string;
+    order_index: number;
+    payload: Record<string, unknown> | null;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+
+  return rows.map(toAdminContentItemSummary);
+}
+
 export async function deleteAdminContentItem(input: { actorId: string; id: string }) {
   await ensureDatabaseSchema();
 
