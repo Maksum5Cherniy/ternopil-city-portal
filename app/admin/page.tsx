@@ -31,17 +31,62 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const adminSections = [
-  { title: "Користувачі", description: "Профілі, блокування, статуси.", icon: Users },
-  { title: "Ролі", description: "Admin, moderator, owner, user.", icon: ShieldCheck },
-  { title: "Новини", description: "Чернетки, публікації, категорії.", icon: FileText },
-  { title: "Заклади", description: "Каталог, заявки власників, зміни.", icon: Building2 },
-  { title: "Модерація", description: "Оголошення, відгуки, скарги.", icon: ClipboardCheck },
-  { title: "Скарги", description: "Розгляд порушень і блокування.", icon: Flag },
-  { title: "Реклама", description: "Банери і промо-блоки.", icon: Megaphone },
-  { title: "Головна", description: "Порядок секцій і добірки.", icon: Home },
-  { title: "Сповіщення", description: "Системні повідомлення.", icon: Bell },
-  { title: "Статистика", description: "Перегляди, кліки, активність.", icon: BarChart3 },
-  { title: "Налаштування", description: "SEO, бренд, системні параметри.", icon: Settings },
+  {
+    id: "admin-users",
+    title: "Користувачі",
+    description: "Профілі, блокування, статуси.",
+    icon: Users,
+  },
+  {
+    id: "admin-roles",
+    title: "Ролі",
+    description: "Admin, moderator, owner, user.",
+    icon: ShieldCheck,
+  },
+  {
+    id: "admin-news",
+    title: "Новини",
+    description: "Чернетки, публікації, категорії.",
+    icon: FileText,
+  },
+  {
+    id: "admin-places",
+    title: "Заклади",
+    description: "Каталог, заявки власників, зміни.",
+    icon: Building2,
+  },
+  {
+    id: "admin-moderation",
+    title: "Модерація",
+    description: "Оголошення, відгуки, скарги.",
+    icon: ClipboardCheck,
+  },
+  {
+    id: "admin-reports",
+    title: "Скарги",
+    description: "Розгляд порушень і блокування.",
+    icon: Flag,
+  },
+  { id: "admin-ads", title: "Реклама", description: "Банери і промо-блоки.", icon: Megaphone },
+  { id: "admin-home", title: "Головна", description: "Порядок секцій і добірки.", icon: Home },
+  {
+    id: "admin-notifications",
+    title: "Сповіщення",
+    description: "Системні повідомлення.",
+    icon: Bell,
+  },
+  {
+    id: "admin-stats",
+    title: "Статистика",
+    description: "Перегляди, кліки, активність.",
+    icon: BarChart3,
+  },
+  {
+    id: "admin-settings",
+    title: "Налаштування",
+    description: "SEO, бренд, системні параметри.",
+    icon: Settings,
+  },
 ];
 
 function AdminAccessDenied({ title, description }: { title: string; description: string }) {
@@ -98,6 +143,8 @@ export default async function AdminPage() {
     { label: "Скарги", value: String(dashboard.stats.pendingReports) },
     { label: "Активні оголошення", value: String(dashboard.stats.activeListings) },
     { label: "Заблоковані", value: String(dashboard.stats.blockedUsers) },
+    { label: "Контент", value: String(dashboard.stats.contentItems) },
+    { label: "Сповіщення", value: String(dashboard.stats.sentNotifications) },
   ];
 
   return (
@@ -116,7 +163,7 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-6">
+      <div className="mt-6 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-surface p-5">
             <div className="text-2xl font-semibold text-primary">{stat.value}</div>
@@ -130,7 +177,11 @@ export default async function AdminPage() {
           const Icon = section.icon;
 
           return (
-            <article key={section.title} className="rounded-lg border border-border bg-surface p-5">
+            <a
+              key={section.title}
+              href={`#${section.id}`}
+              className="rounded-lg border border-border bg-surface p-5 transition hover:border-primary hover:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
               <div className="flex items-start gap-3">
                 <span className="grid h-11 w-11 place-items-center rounded-md bg-primary-soft text-primary">
                   <Icon aria-hidden size={22} />
@@ -140,7 +191,7 @@ export default async function AdminPage() {
                   <p className="mt-1 text-sm leading-6 text-muted">{section.description}</p>
                 </div>
               </div>
-            </article>
+            </a>
           );
         })}
       </div>

@@ -65,7 +65,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang={SITE.language} className="h-full antialiased" suppressHydrationWarning>
+    <html
+      lang={SITE.language}
+      className="h-full antialiased"
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
       <body className={`${inter.variable} min-h-full bg-background font-sans text-foreground`}>
         <ThemeProvider>
           <div className="flex min-h-screen flex-col">

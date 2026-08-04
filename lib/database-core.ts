@@ -185,6 +185,36 @@ export type NotificationSummary = {
   createdAt: string;
 };
 
+export type AdminContentType = "news" | "place" | "ad" | "home";
+export type AdminContentStatus = "draft" | "published" | "archived";
+
+export type AdminContentItemSummary = {
+  id: string;
+  type: AdminContentType;
+  title: string;
+  summary?: string;
+  href?: string;
+  status: AdminContentStatus;
+  orderIndex: number;
+  notes?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SiteSettingSummary = {
+  key: string;
+  value: string;
+  updatedBy?: string;
+  updatedAt?: string;
+};
+
+export type AdminNotificationSummary = NotificationSummary & {
+  userId: string;
+  userEmail: string;
+  userName: string;
+};
+
 export type AdminDashboardData = {
   stats: {
     users: number;
@@ -193,12 +223,17 @@ export type AdminDashboardData = {
     pendingReports: number;
     activeListings: number;
     blockedUsers: number;
+    contentItems: number;
+    sentNotifications: number;
   };
   users: AdminUserSummary[];
   listings: ListingModerationItem[];
   ownerClaims: OwnerClaimSummary[];
   reports: ReportSummary[];
   auditLogs: AuditLogSummary[];
+  contentItems: AdminContentItemSummary[];
+  settings: SiteSettingSummary[];
+  notifications: AdminNotificationSummary[];
 };
 
 type ListingCardRow = {
@@ -214,6 +249,16 @@ type ListingCardRow = {
 
 const validRoles = new Set<UserRole>(["guest", "user", "owner", "moderator", "admin"]);
 const privilegedRoles = new Set<UserRole>(["owner", "moderator", "admin"]);
+const defaultSiteSettings: SiteSettingSummary[] = [
+  { key: "site_title", value: "Де Тернопіль" },
+  {
+    key: "site_description",
+    value: "Міський інформаційний портал Тернополя.",
+  },
+  { key: "contact_email", value: "hello@deternopil.pp.ua" },
+  { key: "seo_keywords", value: "Тернопіль, новини, заклади, події, барахолка" },
+  { key: "homepage_notice", value: "" },
+];
 const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
 let sqlClient: NeonQueryFunction<false, false> | null = null;
@@ -461,6 +506,31 @@ async function createSchema() {
       )
     `;
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS admin_content_items (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        summary TEXT,
+        href TEXT,
+        status TEXT NOT NULL DEFAULT 'draft',
+        order_index INTEGER NOT NULL DEFAULT 0,
+        payload JSONB NOT NULL DEFAULT '{}'::JSONB,
+        created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+
+    await sql`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL DEFAULT '',
+        updated_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+
     await sql`CREATE INDEX IF NOT EXISTS auth_sessions_user_id_idx ON auth_sessions (user_id)`;
     await sql`CREATE INDEX IF NOT EXISTS auth_sessions_expires_at_idx ON auth_sessions (expires_at)`;
     await sql`CREATE INDEX IF NOT EXISTS email_verification_user_idx ON email_verification_tokens (user_id, expires_at)`;
@@ -474,6 +544,7 @@ async function createSchema() {
     await sql`CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, read_at, created_at DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON audit_logs (created_at DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS users_roles_idx ON users USING GIN (roles)`;
+    await sql`CREATE INDEX IF NOT EXISTS admin_content_items_type_status_idx ON admin_content_items (type, status, order_index, updated_at DESC)`;
   } finally {
     await sql`SELECT pg_advisory_unlock(20260804, 1301)`;
   }
@@ -531,6 +602,99 @@ function toAuditLogSummary(row: {
     entityType: row.entity_type,
     entityId: row.entity_id || undefined,
     details: row.details || {},
+    createdAt: row.created_at,
+  };
+}
+
+function toAdminContentItemSummary(row: {
+  id: string;
+  type: string;
+  title: string;
+  summary: string | null;
+  href: string | null;
+  status: string;
+  order_index: number;
+  payload: Record<string, unknown> | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}): AdminContentItemSummary {
+  const type = ["news", "place", "ad", "home"].includes(row.type)
+    ? (row.type as AdminContentType)
+    : "news";
+  const status = ["draft", "published", "archived"].includes(row.status)
+    ? (row.status as AdminContentStatus)
+    : "draft";
+  const payload = row.payload || {};
+  const notes = typeof payload.notes === "string" ? payload.notes : undefined;
+
+  return {
+    id: row.id,
+    type,
+    title: row.title,
+    summary: row.summary || undefined,
+    href: row.href || undefined,
+    status,
+    orderIndex: Number(row.order_index) || 0,
+    notes,
+    createdBy: row.created_by || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toSiteSettingSummary(row: {
+  key: string;
+  value: string;
+  updated_by: string | null;
+  updated_at: string;
+}): SiteSettingSummary {
+  return {
+    key: row.key,
+    value: row.value,
+    updatedBy: row.updated_by || undefined,
+    updatedAt: row.updated_at,
+  };
+}
+
+function toAdminNotificationSummary(row: {
+  id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string;
+  type: string;
+  title: string;
+  body: string;
+  read_at: string | null;
+  created_at: string;
+}): AdminNotificationSummary {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    userEmail: row.user_email,
+    userName: row.user_name,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    readAt: row.read_at || undefined,
+    createdAt: row.created_at,
+  };
+}
+
+function toNotificationSummary(row: {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  read_at: string | null;
+  created_at: string;
+}): NotificationSummary {
+  return {
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    readAt: row.read_at || undefined,
     createdAt: row.created_at,
   };
 }
@@ -635,13 +799,17 @@ export async function createNotification(input: {
 }) {
   await ensureDatabaseSchema();
 
+  const id = randomUUID();
+
   await getSql().query(
     `
       INSERT INTO notifications (id, user_id, type, title, body)
       VALUES ($1, $2, $3, $4, $5)
     `,
-    [randomUUID(), input.userId, input.type, input.title, input.body],
+    [id, input.userId, input.type, input.title, input.body],
   );
+
+  return id;
 }
 
 export async function getUserNotifications(
@@ -668,14 +836,7 @@ export async function getUserNotifications(
     created_at: string;
   }>;
 
-  return rows.map((row) => ({
-    id: row.id,
-    type: row.type,
-    title: row.title,
-    body: row.body,
-    readAt: row.read_at || undefined,
-    createdAt: row.created_at,
-  }));
+  return rows.map(toNotificationSummary);
 }
 
 export async function getUserByEmail(email: string) {
@@ -1388,6 +1549,66 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     }>
   >;
   const reportsPromise = getReports(25);
+  const contentPromise = sql.query(
+    `
+        SELECT *
+        FROM admin_content_items
+        ORDER BY type ASC, order_index ASC, updated_at DESC
+        LIMIT 120
+      `,
+  ) as unknown as Promise<
+    Array<{
+      id: string;
+      type: string;
+      title: string;
+      summary: string | null;
+      href: string | null;
+      status: string;
+      order_index: number;
+      payload: Record<string, unknown> | null;
+      created_by: string | null;
+      created_at: string;
+      updated_at: string;
+    }>
+  >;
+  const settingsPromise = sql.query(
+    `
+        SELECT *
+        FROM site_settings
+        ORDER BY key ASC
+      `,
+  ) as unknown as Promise<
+    Array<{
+      key: string;
+      value: string;
+      updated_by: string | null;
+      updated_at: string;
+    }>
+  >;
+  const notificationsPromise = sql.query(
+    `
+        SELECT
+          n.*,
+          u.email AS user_email,
+          u.display_name AS user_name
+        FROM notifications n
+        JOIN users u ON u.id = n.user_id
+        ORDER BY n.created_at DESC
+        LIMIT 25
+      `,
+  ) as unknown as Promise<
+    Array<{
+      id: string;
+      user_id: string;
+      user_email: string;
+      user_name: string;
+      type: string;
+      title: string;
+      body: string;
+      read_at: string | null;
+      created_at: string;
+    }>
+  >;
   const statsPromise = sql.query(
     `
         SELECT
@@ -1396,7 +1617,9 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
           (SELECT COUNT(*)::INT FROM owner_claims WHERE status = 'pending') AS owner_claims,
           (SELECT COUNT(*)::INT FROM reports WHERE status = 'pending') AS pending_reports,
           (SELECT COUNT(*)::INT FROM listings WHERE status = 'active') AS active_listings,
-          (SELECT COUNT(*)::INT FROM users WHERE is_blocked = TRUE) AS blocked_users
+          (SELECT COUNT(*)::INT FROM users WHERE is_blocked = TRUE) AS blocked_users,
+          (SELECT COUNT(*)::INT FROM admin_content_items) AS content_items,
+          (SELECT COUNT(*)::INT FROM notifications) AS sent_notifications
       `,
   ) as unknown as Promise<
     Array<{
@@ -1406,14 +1629,29 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
       pending_reports: number;
       active_listings: number;
       blocked_users: number;
+      content_items: number;
+      sent_notifications: number;
     }>
   >;
-  const [users, listings, ownerClaims, auditLogs, reports, statsRows] = await Promise.all([
+  const [
+    users,
+    listings,
+    ownerClaims,
+    auditLogs,
+    reports,
+    contentRows,
+    settingRows,
+    notifications,
+    statsRows,
+  ] = await Promise.all([
     usersPromise,
     listingsPromise,
     ownerClaimsPromise,
     auditLogsPromise,
     reportsPromise,
+    contentPromise,
+    settingsPromise,
+    notificationsPromise,
     statsPromise,
   ]);
   const stats = statsRows[0] || {
@@ -1423,7 +1661,10 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     pending_reports: 0,
     active_listings: 0,
     blocked_users: 0,
+    content_items: 0,
+    sent_notifications: 0,
   };
+  const savedSettings = new Map(settingRows.map((row) => [row.key, toSiteSettingSummary(row)]));
 
   return {
     stats: {
@@ -1433,6 +1674,8 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
       pendingReports: Number(stats.pending_reports),
       activeListings: Number(stats.active_listings),
       blockedUsers: Number(stats.blocked_users),
+      contentItems: Number(stats.content_items),
+      sentNotifications: Number(stats.sent_notifications),
     },
     users: users.map(toAdminUserSummary),
     listings: listings.map((row) => ({
@@ -1452,6 +1695,9 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     ownerClaims: ownerClaims.map(toOwnerClaimSummary),
     reports,
     auditLogs: auditLogs.map(toAuditLogSummary),
+    contentItems: contentRows.map(toAdminContentItemSummary),
+    settings: defaultSiteSettings.map((setting) => savedSettings.get(setting.key) || setting),
+    notifications: notifications.map(toAdminNotificationSummary),
   };
 }
 
@@ -1464,6 +1710,296 @@ export async function getModerationDashboard() {
     reports: adminData.reports.filter((report) => report.status === "pending"),
     auditLogs: adminData.auditLogs,
   };
+}
+
+export async function upsertAdminContentItem(input: {
+  actorId: string;
+  id?: string;
+  type: AdminContentType;
+  title: string;
+  summary?: string;
+  href?: string;
+  status: AdminContentStatus;
+  orderIndex?: number;
+  notes?: string;
+}) {
+  await ensureDatabaseSchema();
+
+  const id = input.id || randomUUID();
+  const payload = { notes: sanitizeText(input.notes, 1200) };
+  const rows = (await getSql().query(
+    `
+      INSERT INTO admin_content_items (
+        id, type, title, summary, href, status, order_index, payload, created_by
+      )
+      VALUES ($1, $2, $3, NULLIF($4, ''), NULLIF($5, ''), $6, $7, $8::JSONB, $9)
+      ON CONFLICT (id) DO UPDATE
+      SET type = EXCLUDED.type,
+          title = EXCLUDED.title,
+          summary = EXCLUDED.summary,
+          href = EXCLUDED.href,
+          status = EXCLUDED.status,
+          order_index = EXCLUDED.order_index,
+          payload = EXCLUDED.payload,
+          updated_at = NOW()
+      RETURNING *
+    `,
+    [
+      id,
+      input.type,
+      sanitizeText(input.title, 160),
+      sanitizeText(input.summary, 800),
+      sanitizeText(input.href, 300),
+      input.status,
+      input.orderIndex || 0,
+      JSON.stringify(payload),
+      input.actorId,
+    ],
+  )) as Array<{
+    id: string;
+    type: string;
+    title: string;
+    summary: string | null;
+    href: string | null;
+    status: string;
+    order_index: number;
+    payload: Record<string, unknown> | null;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+  const item = rows[0] ? toAdminContentItemSummary(rows[0]) : null;
+
+  if (item) {
+    await writeAuditLog({
+      actorId: input.actorId,
+      action: input.id ? "content.updated" : "content.created",
+      entityType: input.type,
+      entityId: item.id,
+      details: { status: input.status, title: item.title },
+    });
+  }
+
+  return item;
+}
+
+export async function updateAdminContentStatus(input: {
+  actorId: string;
+  id: string;
+  status: AdminContentStatus;
+}) {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      UPDATE admin_content_items
+      SET status = $2,
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `,
+    [input.id, input.status],
+  )) as Array<{
+    id: string;
+    type: string;
+    title: string;
+    summary: string | null;
+    href: string | null;
+    status: string;
+    order_index: number;
+    payload: Record<string, unknown> | null;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+  const item = rows[0] ? toAdminContentItemSummary(rows[0]) : null;
+
+  if (item) {
+    await writeAuditLog({
+      actorId: input.actorId,
+      action: "content.status.updated",
+      entityType: item.type,
+      entityId: item.id,
+      details: { status: input.status, title: item.title },
+    });
+  }
+
+  return item;
+}
+
+export async function deleteAdminContentItem(input: { actorId: string; id: string }) {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      DELETE FROM admin_content_items
+      WHERE id = $1
+      RETURNING *
+    `,
+    [input.id],
+  )) as Array<{
+    id: string;
+    type: string;
+    title: string;
+    summary: string | null;
+    href: string | null;
+    status: string;
+    order_index: number;
+    payload: Record<string, unknown> | null;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+  const item = rows[0] ? toAdminContentItemSummary(rows[0]) : null;
+
+  if (item) {
+    await writeAuditLog({
+      actorId: input.actorId,
+      action: "content.deleted",
+      entityType: item.type,
+      entityId: item.id,
+      details: { status: item.status, title: item.title },
+    });
+  }
+
+  return item;
+}
+
+export async function updateSiteSettings(input: {
+  actorId: string;
+  settings: Array<{ key: string; value: string }>;
+}) {
+  await ensureDatabaseSchema();
+
+  const rows: SiteSettingSummary[] = [];
+
+  for (const setting of input.settings) {
+    const result = (await getSql().query(
+      `
+        INSERT INTO site_settings (key, value, updated_by, updated_at)
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (key) DO UPDATE
+        SET value = EXCLUDED.value,
+            updated_by = EXCLUDED.updated_by,
+            updated_at = NOW()
+        RETURNING *
+      `,
+      [setting.key, sanitizeText(setting.value, 2000), input.actorId],
+    )) as Array<{
+      key: string;
+      value: string;
+      updated_by: string | null;
+      updated_at: string;
+    }>;
+
+    if (result[0]) {
+      rows.push(toSiteSettingSummary(result[0]));
+    }
+  }
+
+  await writeAuditLog({
+    actorId: input.actorId,
+    action: "settings.updated",
+    entityType: "site_settings",
+    details: { keys: input.settings.map((setting) => setting.key) },
+  });
+
+  return rows;
+}
+
+export async function createSystemNotification(input: {
+  actorId: string;
+  target: "all" | "admins" | "moderators" | "owners" | "users";
+  title: string;
+  body: string;
+}) {
+  await ensureDatabaseSchema();
+
+  const sql = getSql();
+  const targetRole =
+    input.target === "admins"
+      ? "admin"
+      : input.target === "moderators"
+        ? "moderator"
+        : input.target === "owners"
+          ? "owner"
+          : null;
+  const users = targetRole
+    ? ((await sql.query(
+        `
+          SELECT id
+          FROM users
+          WHERE is_blocked = FALSE
+            AND email_verified = TRUE
+            AND roles @> ARRAY[$1]::TEXT[]
+        `,
+        [targetRole],
+      )) as Array<{ id: string }>)
+    : ((await sql.query(
+        `
+          SELECT id
+          FROM users
+          WHERE is_blocked = FALSE
+            AND ($1::TEXT = 'all' OR email_verified = TRUE)
+        `,
+        [input.target],
+      )) as Array<{ id: string }>);
+
+  const notificationIds: string[] = [];
+
+  for (const user of users) {
+    const notificationId = await createNotification({
+      userId: user.id,
+      type: "system",
+      title: sanitizeText(input.title, 160),
+      body: sanitizeText(input.body, 1000),
+    });
+
+    notificationIds.push(notificationId);
+  }
+
+  await writeAuditLog({
+    actorId: input.actorId,
+    action: "notification.sent",
+    entityType: "notification",
+    details: { target: input.target, count: users.length, title: input.title },
+  });
+
+  return { sentCount: users.length, notificationIds };
+}
+
+export async function deleteAdminNotification(input: { actorId: string; id: string }) {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      DELETE FROM notifications
+      WHERE id = $1
+      RETURNING id, user_id, type, title, body, read_at, created_at
+    `,
+    [input.id],
+  )) as Array<{
+    id: string;
+    user_id: string;
+    type: string;
+    title: string;
+    body: string;
+    read_at: string | null;
+    created_at: string;
+  }>;
+  const notification = rows[0];
+
+  if (notification) {
+    await writeAuditLog({
+      actorId: input.actorId,
+      action: "notification.deleted",
+      entityType: "notification",
+      entityId: notification.id,
+      details: { userId: notification.user_id, title: notification.title },
+    });
+  }
+
+  return notification ? toNotificationSummary(notification) : null;
 }
 
 export async function updateUserAdministration(input: {
