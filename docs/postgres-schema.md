@@ -42,6 +42,14 @@
 - `consumed_at timestamptz`
 - `created_at timestamptz not null default now()`
 
+## password_reset_tokens
+
+- `token_hash text primary key`
+- `user_id text not null references users(id) on delete cascade`
+- `expires_at timestamptz not null`
+- `consumed_at timestamptz`
+- `created_at timestamptz not null default now()`
+
 ## listings
 
 - `id text primary key`

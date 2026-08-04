@@ -24,4 +24,4 @@
 - Query-backed списки замість static seed data для всіх публічних модулів.
 - Повний Leaflet/OpenStreetMap runtime з кластеризацією.
 - Image upload/compression через окремий storage provider.
-- Email provider для реального password reset flow.
+- Додати шаблони transactional email у React Email замість inline HTML.

@@ -8,7 +8,7 @@
 4. Додати Environment Variables з `.env.example`.
 5. Підключити Neon Postgres Store або іншу Postgres-базу і додати `DATABASE_URL`.
 6. Додати `ADMIN_EMAILS` для першого адміністратора.
-7. Підключити Resend або додати `RESEND_API_KEY` і `EMAIL_FROM` для підтвердження email.
+7. Підключити Resend або додати `RESEND_API_KEY` і `EMAIL_FROM` для підтвердження email та відновлення пароля.
 
 ## Custom domain
 

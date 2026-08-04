@@ -18,6 +18,17 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Вкажіть пароль"),
 });
 
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(20, "Посилання відновлення недійсне"),
+    password: z.string().min(8, "Пароль має містити щонайменше 8 символів"),
+    confirmPassword: z.string().min(8, "Повторіть пароль"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Паролі не збігаються",
+    path: ["confirmPassword"],
+  });
+
 export const profileSchema = z.object({
   displayName: z.string().min(2, "Вкажіть назву профілю").max(80),
   phone: z.string().max(32).optional(),
@@ -27,4 +38,5 @@ export const profileSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 export type ProfileInput = z.infer<typeof profileSchema>;

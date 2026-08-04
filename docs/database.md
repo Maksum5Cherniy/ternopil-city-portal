@@ -7,7 +7,7 @@
 1. Створити Neon Store у Vercel для проєкту `ternopil-city-portal`.
 2. Додати `DATABASE_URL` у Production, Preview і Development.
 3. Додати `ADMIN_EMAILS` зі списком email-адрес адміністраторів через кому.
-4. Додати `RESEND_API_KEY` і `EMAIL_FROM` для підтвердження email.
+4. Додати `RESEND_API_KEY` і `EMAIL_FROM` для підтвердження email та відновлення пароля.
 5. Виконати `npx vercel env pull .env.local --yes --scope de-te`.
 6. Запустити `npm run seed` локально або окремим одноразовим production-скриптом.
 
@@ -15,7 +15,7 @@
 
 - `lib/database.ts` - lazy Postgres client, створення схеми, користувачі, сесії, оголошення.
 - `lib/password.ts` - хешування і перевірка пароля через Node `scrypt`.
-- `lib/email.ts` - відправка verification email через Resend або контрольований fallback.
+- `lib/email.ts` - відправка verification/reset email через Resend або контрольований fallback.
 - `lib/auth-session.ts` - server-side перевірка cookie, статусу користувача та ролей.
 - `app/api/auth/register/route.ts` - реєстрація користувача.
 - `app/api/auth/login/route.ts` - вхід користувача.

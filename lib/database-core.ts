@@ -349,6 +349,16 @@ async function createSchema() {
     `;
 
     await sql`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        token_hash TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires_at TIMESTAMPTZ NOT NULL,
+        consumed_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+
+    await sql`
       CREATE TABLE IF NOT EXISTS listings (
         id TEXT PRIMARY KEY,
         slug TEXT NOT NULL UNIQUE,
@@ -454,6 +464,7 @@ async function createSchema() {
     await sql`CREATE INDEX IF NOT EXISTS auth_sessions_user_id_idx ON auth_sessions (user_id)`;
     await sql`CREATE INDEX IF NOT EXISTS auth_sessions_expires_at_idx ON auth_sessions (expires_at)`;
     await sql`CREATE INDEX IF NOT EXISTS email_verification_user_idx ON email_verification_tokens (user_id, expires_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS password_reset_user_idx ON password_reset_tokens (user_id, expires_at)`;
     await sql`CREATE INDEX IF NOT EXISTS listings_user_id_idx ON listings (user_id)`;
     await sql`CREATE INDEX IF NOT EXISTS listings_status_idx ON listings (status, moderation_status)`;
     await sql`CREATE INDEX IF NOT EXISTS owner_claims_user_idx ON owner_claims (user_id, status)`;
@@ -766,6 +777,31 @@ export async function createEmailVerificationToken(userId: string) {
   return token;
 }
 
+export async function createPasswordResetToken(userId: string) {
+  await ensureDatabaseSchema();
+
+  const token = randomBytes(32).toString("base64url");
+  const tokenHash = hashToken(token);
+
+  await getSql().query(
+    `
+      UPDATE password_reset_tokens
+      SET consumed_at = NOW()
+      WHERE user_id = $1 AND consumed_at IS NULL
+    `,
+    [userId],
+  );
+  await getSql().query(
+    `
+      INSERT INTO password_reset_tokens (token_hash, user_id, expires_at)
+      VALUES ($1, $2, NOW() + INTERVAL '1 hour')
+    `,
+    [tokenHash, userId],
+  );
+
+  return token;
+}
+
 export async function verifyEmailToken(token: string) {
   await ensureDatabaseSchema();
 
@@ -802,6 +838,52 @@ export async function verifyEmailToken(token: string) {
   const user = userRows[0];
 
   return user ? await syncAdminRoleFromEnv(user) : null;
+}
+
+export async function resetPasswordWithToken(token: string, passwordHash: string) {
+  await ensureDatabaseSchema();
+
+  const tokenHash = hashToken(token);
+  const tokenRows = (await getSql().query(
+    `
+      UPDATE password_reset_tokens
+      SET consumed_at = NOW()
+      WHERE token_hash = $1
+        AND consumed_at IS NULL
+        AND expires_at > NOW()
+      RETURNING user_id
+    `,
+    [tokenHash],
+  )) as Array<{ user_id: string }>;
+
+  const userId = tokenRows[0]?.user_id;
+
+  if (!userId) {
+    return null;
+  }
+
+  const userRows = (await getSql().query(
+    `
+      UPDATE users
+      SET password_hash = $2,
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `,
+    [userId, passwordHash],
+  )) as DatabaseUserRow[];
+
+  await getSql().query("DELETE FROM auth_sessions WHERE user_id = $1", [userId]);
+  await getSql().query(
+    `
+      UPDATE password_reset_tokens
+      SET consumed_at = NOW()
+      WHERE user_id = $1 AND consumed_at IS NULL
+    `,
+    [userId],
+  );
+
+  return userRows[0] || null;
 }
 
 export async function updateUserProfile(

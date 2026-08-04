@@ -57,6 +57,10 @@ export function getEmailVerificationUrl(token: string) {
   return `${getBaseUrl()}/verify-email?token=${encodeURIComponent(token)}`;
 }
 
+export function getPasswordResetUrl(token: string) {
+  return `${getBaseUrl()}/reset-password?token=${encodeURIComponent(token)}`;
+}
+
 export async function sendEmailVerification(input: {
   email: string;
   displayName: string;
@@ -92,6 +96,47 @@ export async function sendEmailVerification(input: {
 
   if (error) {
     console.error("[email verification] send failed", error);
+    return { sent: false, reason: "send-failed", error: error.message };
+  }
+
+  return { sent: true, id: data?.id };
+}
+
+export async function sendPasswordResetEmail(input: {
+  email: string;
+  displayName: string;
+  token: string;
+}): Promise<SendEmailResult> {
+  const resetUrl = getPasswordResetUrl(input.token);
+  const resend = getResend();
+
+  if (!resend) {
+    console.info(`[password reset] ${input.email}: ${resetUrl}`);
+    return { sent: false, reason: "provider-missing" };
+  }
+
+  const from = getEmailFrom();
+  const safeName = escapeHtml(input.displayName);
+  const safeUrl = escapeHtml(resetUrl);
+
+  const { data, error } = await resend.emails.send({
+    from,
+    to: input.email,
+    subject: "Відновлення пароля для Де Тернопіль",
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0d1b3d">
+        <h1 style="font-size:24px;margin:0 0 16px">Відновлення пароля</h1>
+        <p>Вітаємо, ${safeName}.</p>
+        <p>Щоб створити новий пароль для профілю на порталі <strong>Де Тернопіль</strong>, перейдіть за посиланням:</p>
+        <p><a href="${safeUrl}" style="display:inline-block;background:#1e3aba;color:#fff;padding:12px 18px;border-radius:6px;text-decoration:none">Створити новий пароль</a></p>
+        <p>Посилання дійсне 1 годину. Якщо ви не надсилали запит на відновлення, просто проігноруйте цей лист.</p>
+      </div>
+    `,
+    text: `Відновлення пароля для Де Тернопіль: ${resetUrl}`,
+  });
+
+  if (error) {
+    console.error("[password reset] send failed", error);
     return { sent: false, reason: "send-failed", error: error.message };
   }
 
