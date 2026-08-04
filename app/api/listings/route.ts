@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getCurrentServerSession } from "@/lib/auth-session";
-import { createListing, isDatabaseConfigured } from "@/lib/database";
+import { createListing, getRecentListingCount, isDatabaseConfigured } from "@/lib/database";
 import { listingCreateSchema } from "@/schemas/listing";
 
 export const runtime = "nodejs";
@@ -31,6 +31,29 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Щоб створити оголошення, потрібно увійти." },
       { status: 401 },
+    );
+  }
+
+  if (!session.user.emailVerified) {
+    return NextResponse.json(
+      { error: "Підтвердіть email, щоб створювати оголошення на барахолці." },
+      { status: 403 },
+    );
+  }
+
+  if (session.user.sellerStatus === "suspended") {
+    return NextResponse.json(
+      { error: "Публікацію оголошень для цього профілю призупинено." },
+      { status: 403 },
+    );
+  }
+
+  const recentListings = await getRecentListingCount(session.user.uid, 60);
+
+  if (recentListings >= 5) {
+    return NextResponse.json(
+      { error: "Досягнуто ліміт публікацій. Спробуйте пізніше." },
+      { status: 429 },
     );
   }
 

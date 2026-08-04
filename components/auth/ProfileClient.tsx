@@ -16,23 +16,19 @@ type ProfileUser = {
   telegram?: string;
   instagram?: string;
   roles: UserRole[];
+  emailVerified: boolean;
+  sellerStatus: "active" | "suspended";
   profileCompleted: boolean;
   createdAt?: string;
 };
 
 const profileSections = [
-  {
-    title: "Мої оголошення",
-    description: "Активні, на модерації, продані та архів.",
-    icon: PackageCheck,
-  },
   { title: "Обране", description: "Збережені новини, заклади, події та оголошення.", icon: Heart },
   {
     title: "Відгуки",
     description: "Власні відгуки, редагування і статус модерації.",
     icon: MessageSquare,
   },
-  { title: "Заявка власника", description: "Подача заявки на керування закладом.", icon: Store },
   { title: "Сповіщення", description: "Статуси оголошень, модерації та відповіді.", icon: Bell },
   { title: "Налаштування", description: "Профіль, пароль і видалення акаунта.", icon: Settings },
 ];
@@ -49,6 +45,7 @@ export default function ProfileClient() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [resending, setResending] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -122,6 +119,27 @@ export default function ProfileClient() {
     }
   };
 
+  const resendVerification = async () => {
+    setMessage("");
+    setResending(true);
+
+    try {
+      const response = await fetch("/api/auth/resend-verification", { method: "POST" });
+
+      if (!response.ok) {
+        throw new Error(await readError(response, "Не вдалося відправити лист."));
+      }
+
+      const body = (await response.json()) as { message?: string };
+
+      setMessage(body.message || "Лист підтвердження відправлено.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Не вдалося відправити лист.");
+    } finally {
+      setResending(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="rounded-lg border border-border bg-surface p-5 text-sm text-muted">
@@ -170,8 +188,36 @@ export default function ProfileClient() {
           <div>
             <h2 className="text-xl font-semibold">Дані профілю</h2>
             <p className="mt-1 text-sm text-muted">{user.email}</p>
+            <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
+              <span
+                className={`rounded-md border px-2 py-1 ${
+                  user.emailVerified
+                    ? "border-primary/30 bg-primary-soft text-primary-strong"
+                    : "border-accent/40 bg-accent-soft text-accent-strong"
+                }`}
+              >
+                {user.emailVerified ? "Email підтверджено" : "Email не підтверджено"}
+              </span>
+              <span className="rounded-md border border-border bg-surface-subtle px-2 py-1 text-muted">
+                Продавець: {user.sellerStatus === "active" ? "активний" : "призупинено"}
+              </span>
+            </div>
           </div>
         </div>
+
+        {!user.emailVerified ? (
+          <div className="mt-5 rounded-md border border-accent/40 bg-accent-soft p-4 text-sm leading-6 text-accent-strong">
+            Підтвердіть email, щоб створювати оголошення і подавати заявки власника закладу.
+            <button
+              type="button"
+              onClick={resendVerification}
+              disabled={resending}
+              className="mt-3 inline-flex min-h-10 items-center justify-center rounded-md bg-accent px-3 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {resending ? "Відправлення..." : "Надіслати лист повторно"}
+            </button>
+          </div>
+        ) : null}
 
         <div className="mt-5 grid gap-4">
           <div>
@@ -255,6 +301,26 @@ export default function ProfileClient() {
       </form>
 
       <div className="grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/market/new"
+          className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
+        >
+          <PackageCheck aria-hidden size={22} className="text-primary" />
+          <h3 className="mt-3 font-semibold">Продати на барахолці</h3>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            Створити оголошення, пройти модерацію та керувати статусом товару.
+          </p>
+        </Link>
+        <Link
+          href="/owner"
+          className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
+        >
+          <Store aria-hidden size={22} className="text-primary" />
+          <h3 className="mt-3 font-semibold">Заявка власника</h3>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            Подати заявку на керування закладом або переглянути її статус.
+          </p>
+        </Link>
         {profileSections.map((section) => {
           const Icon = section.icon;
 
@@ -266,6 +332,30 @@ export default function ProfileClient() {
             </div>
           );
         })}
+        {user.roles.includes("moderator") || user.roles.includes("admin") ? (
+          <Link
+            href="/moderation"
+            className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
+          >
+            <Bell aria-hidden size={22} className="text-primary" />
+            <h3 className="mt-3 font-semibold">Модерація</h3>
+            <p className="mt-1 text-sm leading-6 text-muted">
+              Черга оголошень, заявок власників, скарг і журнал дій.
+            </p>
+          </Link>
+        ) : null}
+        {user.roles.includes("admin") ? (
+          <Link
+            href="/admin"
+            className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
+          >
+            <Settings aria-hidden size={22} className="text-primary" />
+            <h3 className="mt-3 font-semibold">Адмінпанель</h3>
+            <p className="mt-1 text-sm leading-6 text-muted">
+              Користувачі, ролі, блокування, модерація і системний журнал.
+            </p>
+          </Link>
+        ) : null}
       </div>
     </div>
   );

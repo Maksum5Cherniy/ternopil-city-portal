@@ -60,7 +60,9 @@ export default function LoginForm({ redirectTo = "/profile" }: { redirectTo?: st
         throw new Error(await readError(response, "Не вдалося увійти."));
       }
 
-      setMessage(uk.auth.loginSuccess);
+      const body = (await response.json()) as { message?: string };
+
+      setMessage(body.message || uk.auth.loginSuccess);
       router.push(redirectTo);
       router.refresh();
     } catch (error) {

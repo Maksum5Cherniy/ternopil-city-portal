@@ -8,11 +8,14 @@
 4. Додати Environment Variables з `.env.example`.
 5. Підключити Neon Postgres Store або іншу Postgres-базу і додати `DATABASE_URL`.
 6. Додати `ADMIN_EMAILS` для першого адміністратора.
+7. Підключити Resend або додати `RESEND_API_KEY` і `EMAIL_FROM` для підтвердження email.
 
 Мінімум для server-side доступу до `/admin`:
 
 - `DATABASE_URL`
 - `ADMIN_EMAILS`
+- `RESEND_API_KEY`
+- `EMAIL_FROM`
 
 Без `DATABASE_URL` сторінка `/admin` залишається закритою і показує повідомлення про відсутню базу даних. Публічні сторінки все одно збираються та відкриваються зі static seed data.
 

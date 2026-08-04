@@ -63,10 +63,12 @@ export default function RegisterForm() {
         throw new Error(await readError(response, "Не вдалося створити профіль."));
       }
 
+      const body = (await response.json()) as { message?: string };
+
       setStatus("success");
-      setMessage(uk.auth.profileCreated);
+      setMessage(body.message || uk.auth.profileCreated);
       router.refresh();
-      router.push("/profile");
+      router.push("/profile?verify=1");
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Не вдалося створити профіль.");

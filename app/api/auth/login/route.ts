@@ -3,6 +3,7 @@ import { createServerSession, setSessionCookie } from "@/lib/auth-session";
 import {
   getUserByEmail,
   isDatabaseConfigured,
+  markUserLastLogin,
   syncAdminRoleFromEnv,
   toPublicUser,
 } from "@/lib/database";
@@ -46,9 +47,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Цей профіль заблокований." }, { status: 403 });
   }
 
+  await markUserLastLogin(user.id);
   const userWithEnvRoles = await syncAdminRoleFromEnv(user);
   const token = await createServerSession(user.id);
-  const response = NextResponse.json({ ok: true, user: toPublicUser(userWithEnvRoles) });
+  const publicUser = toPublicUser(userWithEnvRoles);
+  const response = NextResponse.json({
+    ok: true,
+    user: publicUser,
+    message: publicUser.emailVerified
+      ? "Вхід виконано."
+      : "Вхід виконано. Підтвердіть email, щоб створювати оголошення та подавати заявки.",
+  });
 
   setSessionCookie(response, token);
 

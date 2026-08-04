@@ -12,8 +12,13 @@
 - `telegram text`
 - `instagram text`
 - `roles text[] not null default array['user']`
+- `email_verified boolean not null default false`
+- `email_verified_at timestamptz`
+- `seller_status text not null default 'active'`
 - `is_blocked boolean not null default false`
+- `blocked_reason text`
 - `profile_completed boolean not null default false`
+- `last_login_at timestamptz`
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
 
@@ -28,6 +33,14 @@
 
 - `auth_sessions_user_id_idx`
 - `auth_sessions_expires_at_idx`
+
+## email_verification_tokens
+
+- `token_hash text primary key`
+- `user_id text not null references users(id) on delete cascade`
+- `expires_at timestamptz not null`
+- `consumed_at timestamptz`
+- `created_at timestamptz not null default now()`
 
 ## listings
 
@@ -49,6 +62,9 @@
 - `images jsonb not null default '[]'`
 - `status text not null default 'pending'`
 - `moderation_status text not null default 'pending'`
+- `moderation_comment text`
+- `moderated_by text references users(id) on delete set null`
+- `moderated_at timestamptz`
 - `is_featured boolean not null default false`
 - `views integer not null default 0`
 - `favorites_count integer not null default 0`
@@ -64,7 +80,15 @@
 
 ## Наступні таблиці
 
-Для повного production-порталу треба додати:
+Додані production-таблиці для ролей і workflow:
+
+- `seller_profiles`
+- `owner_claims`
+- `reports`
+- `notifications`
+- `audit_logs`
+
+Для повного production-порталу ще треба додати:
 
 - `news`, `news_categories`
 - `places`, `place_categories`, `place_claims`, `place_change_requests`

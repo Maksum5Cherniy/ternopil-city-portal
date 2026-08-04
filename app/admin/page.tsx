@@ -10,13 +10,14 @@ import {
   Megaphone,
   Settings,
   ShieldCheck,
-  Tags,
   Users,
 } from "lucide-react";
+import { redirect } from "next/navigation";
+import AdminConsole from "@/components/admin/AdminConsole";
 import { Badge } from "@/components/ui/Badge";
 import { uk } from "@/config/dictionaries/uk";
 import { getCurrentServerSession, hasServerRole } from "@/lib/auth-session";
-import { redirect } from "next/navigation";
+import { getAdminDashboard } from "@/lib/database";
 
 export const metadata: Metadata = {
   title: "Адміністративна панель",
@@ -29,13 +30,6 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const stats = [
-  { label: "На модерації", value: "24" },
-  { label: "Нові заявки", value: "7" },
-  { label: "Скарги", value: "5" },
-  { label: "Активні оголошення", value: "128" },
-];
-
 const adminSections = [
   { title: "Користувачі", description: "Профілі, блокування, статуси.", icon: Users },
   { title: "Ролі", description: "Admin, moderator, owner, user.", icon: ShieldCheck },
@@ -45,7 +39,6 @@ const adminSections = [
   { title: "Скарги", description: "Розгляд порушень і блокування.", icon: Flag },
   { title: "Реклама", description: "Банери і промо-блоки.", icon: Megaphone },
   { title: "Головна", description: "Порядок секцій і добірки.", icon: Home },
-  { title: "Категорії та теги", description: "Довідники для всіх модулів.", icon: Tags },
   { title: "Сповіщення", description: "Системні повідомлення.", icon: Bell },
   { title: "Статистика", description: "Перегляди, кліки, активність.", icon: BarChart3 },
   { title: "Налаштування", description: "SEO, бренд, системні параметри.", icon: Settings },
@@ -97,6 +90,15 @@ export default async function AdminPage() {
     );
   }
 
+  const dashboard = await getAdminDashboard();
+  const stats = [
+    { label: "Користувачі", value: String(dashboard.stats.users) },
+    { label: "На модерації", value: String(dashboard.stats.pendingListings) },
+    { label: "Заявки власників", value: String(dashboard.stats.ownerClaims) },
+    { label: "Активні оголошення", value: String(dashboard.stats.activeListings) },
+    { label: "Заблоковані", value: String(dashboard.stats.blockedUsers) },
+  ];
+
   return (
     <section className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="flex flex-col gap-4 border-b border-border pb-6 lg:flex-row lg:items-end lg:justify-between">
@@ -113,7 +115,7 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
+      <div className="mt-6 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-5">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-surface p-5">
             <div className="text-2xl font-semibold text-primary">{stat.value}</div>
@@ -141,6 +143,8 @@ export default async function AdminPage() {
           );
         })}
       </div>
+
+      <AdminConsole data={dashboard} />
     </section>
   );
 }

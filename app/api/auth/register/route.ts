@@ -2,11 +2,13 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { createServerSession, setSessionCookie } from "@/lib/auth-session";
 import {
+  createEmailVerificationToken,
   createUser,
   isDatabaseConfigured,
   syncAdminRoleFromEnv,
   toPublicUser,
 } from "@/lib/database";
+import { sendEmailVerification } from "@/lib/email";
 import { hashPassword } from "@/lib/password";
 import { registerSchema } from "@/schemas/auth";
 
@@ -47,9 +49,22 @@ export async function POST(request: Request) {
       displayName: parsed.data.displayName,
     });
     const userWithEnvRoles = await syncAdminRoleFromEnv(user);
+    const verificationToken = await createEmailVerificationToken(user.id);
+    const emailResult = await sendEmailVerification({
+      email: user.email,
+      displayName: user.display_name,
+      token: verificationToken,
+    });
     const token = await createServerSession(user.id);
     const response = NextResponse.json(
-      { ok: true, user: toPublicUser(userWithEnvRoles) },
+      {
+        ok: true,
+        emailSent: emailResult.sent,
+        user: toPublicUser(userWithEnvRoles),
+        message: emailResult.sent
+          ? "Профіль створено. Перевірте пошту і підтвердьте email."
+          : "Профіль створено, але email-провайдер ще не налаштований.",
+      },
       { status: 201 },
     );
 

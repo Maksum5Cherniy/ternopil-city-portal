@@ -6,6 +6,7 @@ import type { NextResponse } from "next/server";
 import { isAtLeastRole } from "@/lib/access-control";
 import {
   ensureDatabaseSchema,
+  type DatabaseUserRow,
   getSql,
   isDatabaseConfigured,
   normalizeRoles,
@@ -54,20 +55,7 @@ export async function getCurrentServerSession(): Promise<ServerSession> {
         LIMIT 1
       `,
       [hashSessionToken(sessionCookie)],
-    )) as Array<{
-      id: string;
-      email: string;
-      password_hash: string;
-      display_name: string;
-      phone: string | null;
-      telegram: string | null;
-      instagram: string | null;
-      roles: string[];
-      is_blocked: boolean;
-      profile_completed: boolean;
-      created_at: string;
-      updated_at: string;
-    }>;
+    )) as DatabaseUserRow[];
 
     if (!rows[0]) {
       return { status: "invalid" };

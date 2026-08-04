@@ -9,8 +9,8 @@
 - Публічні сторінки: `/`, `/news`, `/places`, `/locations`, `/events`, `/map`, `/market`, `/search`, `/contacts`, `/privacy`, `/terms`.
 - Детальні сторінки для новин, закладів, локацій, подій і оголошень: `/news/[slug]`, `/places/[slug]`, `/locations/[slug]`, `/events/[slug]`, `/market/[slug]`.
 - Реєстрація, вхід, відновлення пароля, профіль і вихід: `/register`, `/login`, `/forgot-password`, `/profile`.
-- Server-side auth: httpOnly cookie `de_ternopil_session`, таблиці `users` і `auth_sessions`, перевірка ролей на сервері.
-- Адмін-панель із server-side перевіркою ролі `admin`: `/admin`; службові кабінети: `/owner`, `/moderation`.
+- Server-side auth: httpOnly cookie `de_ternopil_session`, таблиці `users` і `auth_sessions`, email verification, перевірка ролей на сервері.
+- Адмін-панель із server-side перевіркою ролі `admin`: `/admin`; службові кабінети з role guards: `/owner`, `/moderation`.
 - Створення оголошень авторизованими користувачами: `/market/new`; записи зберігаються у Postgres зі статусом `pending`.
 - SEO: metadata, Open Graph, sitemap, robots, structured data на detail pages, 404/500/error screens.
 - Zod-схеми, доменні типи, рольова модель і unit-тести для access control.
@@ -20,8 +20,9 @@
 1. Користувач відкриває `/register`.
 2. Вводить назву профілю, email, пароль і приймає правила.
 3. API `/api/auth/register` валідує форму, хешує пароль через `scrypt` і створює запис у таблиці `users`.
-4. Сервер створює рядок у `auth_sessions` і виставляє httpOnly cookie `de_ternopil_session`.
-5. Користувач переходить у `/profile`, де може додати телефон і соцмережі; для оголошень використовує `/market/new`.
+4. Сервер створює verification token і відправляє лист підтвердження email.
+5. Сервер створює рядок у `auth_sessions` і виставляє httpOnly cookie `de_ternopil_session`.
+6. Користувач переходить у `/profile`, підтверджує email, додає телефон і соцмережі; для оголошень використовує `/market/new`.
 
 Для реальної роботи цього flow потрібна змінна `DATABASE_URL` з Vercel Neon Store або іншої сумісної Postgres-бази.
 
@@ -33,7 +34,7 @@
 4. `/admin` читає cookie на сервері, перевіряє активну сесію і роль `admin` у таблиці `users.roles`.
 5. Без сесії користувач перенаправляється на `/login?next=/admin`; без ролі `admin` бачить сторінку відмови в доступі.
 
-Першого адміністратора можна задати через змінну `ADMIN_EMAILS`. Email зі списку автоматично отримує роль `admin` під час реєстрації або входу.
+Першого адміністратора можна задати через змінну `ADMIN_EMAILS`. Email зі списку отримує роль `admin` тільки після підтвердження email.
 
 ## Запуск
 
@@ -51,6 +52,8 @@ npm run dev
 ```bash
 DATABASE_URL=postgres://...
 ADMIN_EMAILS=admin@example.com
+RESEND_API_KEY=re_...
+EMAIL_FROM=Де Тернопіль <hello@your-domain.example>
 ```
 
 Seed script створює схему, тестового адміністратора і стартові оголошення:
@@ -59,7 +62,7 @@ Seed script створює схему, тестового адміністрат
 npm run seed
 ```
 
-Якщо `DATABASE_URL` не заданий, сайт збирається і відкриває публічні сторінки зі static seed data, але реєстрація, вхід, профіль, створення оголошень і `/admin` показують повідомлення про відсутню базу.
+Якщо `DATABASE_URL` не заданий, сайт збирається і відкриває публічні сторінки зі static seed data, але реєстрація, вхід, профіль, створення оголошень і `/admin` показують повідомлення про відсутню базу. Якщо `RESEND_API_KEY` не заданий, профіль створюється, але лист підтвердження email не відправляється.
 
 ## Перевірка
 
@@ -83,6 +86,6 @@ npm test
 ## Відомі обмеження
 
 - `/owner` і `/moderation` поки мають UI-структуру; server-side guards для них залишені наступним етапом після `/admin`.
-- Повний CRUD адмінки для користувачів, ролей, категорій, блоків головної, реклами й audit logs ще треба доробити поверх Postgres.
+- Адмінка вже керує користувачами, ролями, блокуванням, seller status, модерацією оголошень і заявками власників; CRUD для новин, категорій, блоків головної та реклами ще треба доробити.
 - Карта має UI-підготовку; повноцінний Leaflet/OpenStreetMap runtime можна підключати поверх наявної структури.
 - Відновлення пароля зараз приймає запит без відправки листа; для production треба підключити email provider.
