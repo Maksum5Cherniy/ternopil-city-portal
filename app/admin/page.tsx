@@ -95,6 +95,7 @@ export default async function AdminPage() {
     { label: "Користувачі", value: String(dashboard.stats.users) },
     { label: "На модерації", value: String(dashboard.stats.pendingListings) },
     { label: "Заявки власників", value: String(dashboard.stats.ownerClaims) },
+    { label: "Скарги", value: String(dashboard.stats.pendingReports) },
     { label: "Активні оголошення", value: String(dashboard.stats.activeListings) },
     { label: "Заблоковані", value: String(dashboard.stats.blockedUsers) },
   ];
@@ -115,7 +116,7 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-5">
+      <div className="mt-6 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-6">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-surface p-5">
             <div className="text-2xl font-semibold text-primary">{stat.value}</div>

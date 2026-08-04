@@ -13,4 +13,9 @@ export const listingCreateSchema = z.object({
   preferredContact: z.enum(["phone", "telegram", "instagram", "other"]),
 });
 
+export const listingStatusUpdateSchema = z.object({
+  status: z.enum(["pending", "sold", "archived", "deleted"]),
+});
+
 export type ListingCreateInput = z.infer<typeof listingCreateSchema>;
+export type ListingStatusUpdateInput = z.infer<typeof listingStatusUpdateSchema>;

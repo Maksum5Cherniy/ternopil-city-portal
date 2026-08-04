@@ -78,7 +78,7 @@
 - `listings_category_created_idx`
 - `listings_user_created_idx`
 
-## Наступні таблиці
+## Workflow tables
 
 Додані production-таблиці для ролей і workflow:
 
@@ -88,6 +88,37 @@
 - `notifications`
 - `audit_logs`
 
+## reports
+
+- `id text primary key`
+- `reporter_id text references users(id) on delete set null`
+- `entity_type text not null`
+- `entity_id text not null`
+- `reason text not null`
+- `status text not null default 'pending'`
+- `moderation_comment text`
+- `created_at timestamptz not null default now()`
+- `updated_at timestamptz not null default now()`
+
+Індекси:
+
+- `reports_status_idx`
+- `reports_entity_idx`
+
+## notifications
+
+- `id text primary key`
+- `user_id text not null references users(id) on delete cascade`
+- `type text not null`
+- `title text not null`
+- `body text not null`
+- `read_at timestamptz`
+- `created_at timestamptz not null default now()`
+
+Індекси:
+
+- `notifications_user_idx`
+
 Для повного production-порталу ще треба додати:
 
 - `news`, `news_categories`
@@ -96,10 +127,7 @@
 - `events`, `event_categories`
 - `reviews`
 - `favorites`
-- `reports`
-- `notifications`
 - `advertisements`
 - `homepage_sections`
-- `audit_logs`
 - `site_settings`
 - `moderation_queue`

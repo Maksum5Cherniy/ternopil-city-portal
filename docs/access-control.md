@@ -41,7 +41,7 @@ Profile creation flow:
 1. `/register` posts to `/api/auth/register`.
 2. The server validates input, hashes the password and creates `users`.
 3. The default role is `user`.
-4. If the email is listed in `ADMIN_EMAILS`, the server also adds `admin`.
+4. If the email is listed in `ADMIN_EMAILS`, the server adds `admin` only after email verification.
 5. The server creates `auth_sessions` and sets httpOnly cookie `de_ternopil_session`.
 6. Role changes must stay protected through server routes or admin scripts so clients cannot promote themselves.
 
@@ -92,7 +92,7 @@ Every important admin action writes to `audit_logs`.
 
 Security layers:
 
-1. Server role check in route handlers/server actions. `/admin` verifies `de_ternopil_session` against Postgres before rendering.
+1. Server role check in route handlers/server actions. `/admin`, `/moderation`, `/owner`, `/profile/listings` and `/profile/notifications` verify `de_ternopil_session` against Postgres before rendering protected data.
 2. Zod validation before every write.
 3. Repository ownership checks before mutations.
 4. Database constraints and transactions for data integrity.

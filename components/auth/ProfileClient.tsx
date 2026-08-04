@@ -3,7 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Bell, Heart, MessageSquare, PackageCheck, Settings, Store, UserRound } from "lucide-react";
+import {
+  Bell,
+  Heart,
+  ListChecks,
+  MessageSquare,
+  PackageCheck,
+  Settings,
+  Store,
+  UserRound,
+} from "lucide-react";
 import { uk } from "@/config/dictionaries/uk";
 import { profileSchema, type ProfileInput } from "@/schemas/auth";
 import type { UserRole } from "@/types";
@@ -29,7 +38,12 @@ const profileSections = [
     description: "Власні відгуки, редагування і статус модерації.",
     icon: MessageSquare,
   },
-  { title: "Сповіщення", description: "Статуси оголошень, модерації та відповіді.", icon: Bell },
+  {
+    title: "Сповіщення",
+    description: "Статуси оголошень, модерації та відповіді.",
+    icon: Bell,
+    href: "/profile/notifications",
+  },
   { title: "Налаштування", description: "Профіль, пароль і видалення акаунта.", icon: Settings },
 ];
 
@@ -312,6 +326,16 @@ export default function ProfileClient() {
           </p>
         </Link>
         <Link
+          href="/profile/listings"
+          className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
+        >
+          <ListChecks aria-hidden size={22} className="text-primary" />
+          <h3 className="mt-3 font-semibold">Мої оголошення</h3>
+          <p className="mt-1 text-sm leading-6 text-muted">
+            Статуси модерації, причина відхилення, архів, продаж і повторна подача.
+          </p>
+        </Link>
+        <Link
           href="/owner"
           className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
         >
@@ -323,12 +347,25 @@ export default function ProfileClient() {
         </Link>
         {profileSections.map((section) => {
           const Icon = section.icon;
-
-          return (
-            <div key={section.title} className="rounded-lg border border-border bg-surface p-4">
+          const content = (
+            <>
               <Icon aria-hidden size={22} className="text-primary" />
               <h3 className="mt-3 font-semibold">{section.title}</h3>
               <p className="mt-1 text-sm leading-6 text-muted">{section.description}</p>
+            </>
+          );
+
+          return section.href ? (
+            <Link
+              key={section.title}
+              href={section.href}
+              className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary"
+            >
+              {content}
+            </Link>
+          ) : (
+            <div key={section.title} className="rounded-lg border border-border bg-surface p-4">
+              {content}
             </div>
           );
         })}

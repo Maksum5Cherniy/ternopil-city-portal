@@ -8,10 +8,11 @@
 - Палітра з нового дизайн-макету: основний синій `#0D1B3D`, акцентний синій `#1E3ABA`, світлий синій `#2563EB`, жовтий `#FBBF24`, зелений `#22C55E`, світлий сірий `#F3F4F6`, текстовий сірий `#374151`.
 - Публічні сторінки: `/`, `/news`, `/places`, `/locations`, `/events`, `/map`, `/market`, `/search`, `/contacts`, `/privacy`, `/terms`.
 - Детальні сторінки для новин, закладів, локацій, подій і оголошень: `/news/[slug]`, `/places/[slug]`, `/locations/[slug]`, `/events/[slug]`, `/market/[slug]`.
-- Реєстрація, вхід, відновлення пароля, профіль і вихід: `/register`, `/login`, `/forgot-password`, `/profile`.
+- Реєстрація, вхід, відновлення пароля, профіль, сповіщення, власні оголошення і вихід: `/register`, `/login`, `/forgot-password`, `/profile`, `/profile/notifications`, `/profile/listings`.
 - Server-side auth: httpOnly cookie `de_ternopil_session`, таблиці `users` і `auth_sessions`, email verification, перевірка ролей на сервері.
 - Адмін-панель із server-side перевіркою ролі `admin`: `/admin`; службові кабінети з role guards: `/owner`, `/moderation`.
-- Створення оголошень авторизованими користувачами: `/market/new`; записи зберігаються у Postgres зі статусом `pending`.
+- Створення оголошень авторизованими користувачами: `/market/new`; записи зберігаються у Postgres зі статусом `pending`, проходять модерацію, мають публічну сторінку `/market/[slug]` після схвалення і керуються з `/profile/listings`.
+- Скарги на оголошення: `/api/reports`, черга скарг у `/moderation` і `/admin`, рішення модератора логуються в `audit_logs`.
 - SEO: metadata, Open Graph, sitemap, robots, structured data на detail pages, 404/500/error screens.
 - Zod-схеми, доменні типи, рольова модель і unit-тести для access control.
 
@@ -22,7 +23,7 @@
 3. API `/api/auth/register` валідує форму, хешує пароль через `scrypt` і створює запис у таблиці `users`.
 4. Сервер створює verification token і відправляє лист підтвердження email.
 5. Сервер створює рядок у `auth_sessions` і виставляє httpOnly cookie `de_ternopil_session`.
-6. Користувач переходить у `/profile`, підтверджує email, додає телефон і соцмережі; для оголошень використовує `/market/new`.
+6. Користувач переходить у `/profile`, підтверджує email, додає телефон і соцмережі; для оголошень використовує `/market/new`, а статуси бачить у `/profile/listings`.
 
 Для реальної роботи цього flow потрібна змінна `DATABASE_URL` з Vercel Neon Store або іншої сумісної Postgres-бази.
 
@@ -85,7 +86,6 @@ npm test
 
 ## Відомі обмеження
 
-- `/owner` і `/moderation` поки мають UI-структуру; server-side guards для них залишені наступним етапом після `/admin`.
-- Адмінка вже керує користувачами, ролями, блокуванням, seller status, модерацією оголошень і заявками власників; CRUD для новин, категорій, блоків головної та реклами ще треба доробити.
+- Адмінка вже керує користувачами, ролями, блокуванням, seller status, модерацією оголошень, скаргами і заявками власників; CRUD для новин, категорій, блоків головної та реклами ще треба доробити.
 - Карта має UI-підготовку; повноцінний Leaflet/OpenStreetMap runtime можна підключати поверх наявної структури.
 - Відновлення пароля зараз приймає запит без відправки листа; для production треба підключити email provider.

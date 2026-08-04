@@ -95,6 +95,24 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
     router.refresh();
   };
 
+  const moderateReport = async (reportId: string, status: "reviewed" | "dismissed" | "blocked") => {
+    setMessage("");
+
+    const response = await fetch("/api/admin/reports", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reportId, status }),
+    });
+
+    if (!response.ok) {
+      setMessage(await readError(response, "Не вдалося змінити статус скарги."));
+      return;
+    }
+
+    setMessage("Скаргу оновлено.");
+    router.refresh();
+  };
+
   return (
     <div className="mt-8 grid gap-6">
       {message ? (
@@ -174,7 +192,7 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-2">
+      <section className="grid gap-6 xl:grid-cols-3">
         <div className="rounded-lg border border-border bg-surface p-5">
           <h2 className="text-xl font-semibold">Оголошення на модерації</h2>
           <div className="mt-4 grid gap-3">
@@ -217,6 +235,54 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
               ))
             ) : (
               <p className="text-sm text-muted">Оголошень немає.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-border bg-surface p-5">
+          <h2 className="text-xl font-semibold">Скарги</h2>
+          <div className="mt-4 grid gap-3">
+            {data.reports.length > 0 ? (
+              data.reports.map((report) => (
+                <div key={report.id} className="rounded-md border border-border p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold">{report.entityTitle || report.entityId}</h3>
+                    <Badge variant={report.status === "pending" ? "warning" : "primary"}>
+                      {report.status}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs font-semibold text-primary">
+                    {report.entityType}
+                    {report.reporterEmail ? ` · ${report.reporterEmail}` : ""}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-muted">{report.reason}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => moderateReport(report.id, "reviewed")}
+                      className="min-h-10 rounded-md bg-primary px-3 text-sm font-semibold text-white"
+                    >
+                      Опрацьовано
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moderateReport(report.id, "dismissed")}
+                      className="min-h-10 rounded-md border border-border px-3 text-sm font-semibold"
+                    >
+                      Відхилити скаргу
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moderateReport(report.id, "blocked")}
+                      className="min-h-10 rounded-md border border-accent bg-accent-soft px-3 text-sm font-semibold text-accent-strong"
+                    >
+                      Заблокувати контент
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted">Скарг немає.</p>
             )}
           </div>
         </div>

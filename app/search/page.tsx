@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { allSearchItems } from "@/constants/content";
 import { uk } from "@/config/dictionaries/uk";
+import { searchListingCardsFromDatabase } from "@/lib/database";
 
 export const metadata: Metadata = {
   title: "Пошук",
@@ -19,11 +20,17 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const rawQuery = params?.q;
   const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery || "").trim().toLowerCase();
-  const results = query
+  const staticResults = query
     ? allSearchItems.filter((item) =>
         `${item.title} ${item.description} ${item.meta || ""}`.toLowerCase().includes(query),
       )
     : allSearchItems;
+  const databaseListingItems = (await searchListingCardsFromDatabase(query).catch(() => [])).map(
+    (item) => ({ ...item, type: "Барахолка" }),
+  );
+  const results = Array.from(
+    new Map([...staticResults, ...databaseListingItems].map((item) => [item.href, item])).values(),
+  );
 
   return (
     <section className="mx-auto w-full max-w-[920px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">

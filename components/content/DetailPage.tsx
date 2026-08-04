@@ -8,11 +8,13 @@ export function DetailPage({
   backHref,
   backLabel,
   schemaType,
+  children,
 }: {
   item: PortalEntity;
   backHref: string;
   backLabel: string;
   schemaType: "Article" | "LocalBusiness" | "Event" | "Product" | "Place";
+  children?: React.ReactNode;
 }) {
   const jsonLd = {
     "@context": "https://schema.org",
@@ -91,6 +93,8 @@ export function DetailPage({
           </p>
         </div>
       </div>
+
+      {children}
     </article>
   );
 }

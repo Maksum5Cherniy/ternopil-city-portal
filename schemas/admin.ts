@@ -22,6 +22,13 @@ export const ownerClaimModerationSchema = z.object({
   comment: z.string().max(500).optional(),
 });
 
+export const reportModerationSchema = z.object({
+  reportId: z.string().min(1),
+  status: z.enum(["reviewed", "dismissed", "blocked"]),
+  comment: z.string().max(500).optional(),
+});
+
 export type AdminUserUpdateInput = z.infer<typeof adminUserUpdateSchema>;
 export type ListingModerationInput = z.infer<typeof listingModerationSchema>;
 export type OwnerClaimModerationInput = z.infer<typeof ownerClaimModerationSchema>;
+export type ReportModerationInput = z.infer<typeof reportModerationSchema>;

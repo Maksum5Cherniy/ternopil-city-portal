@@ -9,6 +9,7 @@ import {
   placeCategories,
   places,
 } from "@/constants/content";
+import { getListingSitemapRoutes } from "@/lib/database";
 
 const publicRoutes = [
   "/",
@@ -34,11 +35,20 @@ const dynamicRoutes = [
   ...listingCategories.map((item) => `/market/${item.slug}`),
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  return [...new Set([...publicRoutes, ...dynamicRoutes])].map((route) => ({
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const databaseListingRoutes = await getListingSitemapRoutes().catch(() => []);
+  const routeEntries = [...new Set([...publicRoutes, ...dynamicRoutes])].map((route) => ({
     url: `${SITE.url}${route}`,
     lastModified: new Date(),
-    changeFrequency: route === "/" ? "daily" : "weekly",
+    changeFrequency: route === "/" ? ("daily" as const) : ("weekly" as const),
     priority: route === "/" ? 1 : 0.7,
   }));
+  const databaseEntries = databaseListingRoutes.map((item) => ({
+    url: `${SITE.url}${item.route}`,
+    lastModified: item.lastModified,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [...routeEntries, ...databaseEntries];
 }

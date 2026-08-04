@@ -1,6 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
-import type { HomeCard, ModerationStatus, UserRole } from "@/types";
+import type { HomeCard, ListingStatus, ModerationStatus, UserRole } from "@/types";
 
 export class DatabaseNotConfiguredError extends Error {
   constructor() {
@@ -85,9 +85,39 @@ export type ListingModerationItem = {
   categoryId: string;
   status: string;
   moderationStatus: ModerationStatus;
+  moderationComment?: string;
   authorName: string;
   authorEmail: string;
   createdAt: string;
+};
+
+export type UserListingSummary = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  categoryId: string;
+  condition: string;
+  district?: string;
+  status: ListingStatus;
+  moderationStatus: ModerationStatus;
+  moderationComment?: string;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string;
+  publicHref: string;
+};
+
+export type PublicListingDetail = UserListingSummary & {
+  phone?: string;
+  telegram?: string;
+  instagram?: string;
+  preferredContact: string;
+  authorName: string;
+  views: number;
+  favoritesCount: number;
 };
 
 export type OwnerClaimRow = {
@@ -131,17 +161,43 @@ export type AuditLogSummary = {
   createdAt: string;
 };
 
+export type ReportSummary = {
+  id: string;
+  reporterId?: string;
+  reporterName?: string;
+  reporterEmail?: string;
+  entityType: string;
+  entityId: string;
+  entityTitle?: string;
+  reason: string;
+  status: string;
+  moderationComment?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type NotificationSummary = {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  readAt?: string;
+  createdAt: string;
+};
+
 export type AdminDashboardData = {
   stats: {
     users: number;
     pendingListings: number;
     ownerClaims: number;
+    pendingReports: number;
     activeListings: number;
     blockedUsers: number;
   };
   users: AdminUserSummary[];
   listings: ListingModerationItem[];
   ownerClaims: OwnerClaimSummary[];
+  reports: ReportSummary[];
   auditLogs: AuditLogSummary[];
 };
 
@@ -247,162 +303,169 @@ export async function ensureDatabaseSchema() {
 async function createSchema() {
   const sql = getSql();
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      email TEXT NOT NULL UNIQUE,
-      password_hash TEXT NOT NULL,
-      display_name TEXT NOT NULL,
-      phone TEXT,
-      telegram TEXT,
-      instagram TEXT,
-      roles TEXT[] NOT NULL DEFAULT ARRAY['user']::TEXT[],
-      is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
-      profile_completed BOOLEAN NOT NULL DEFAULT FALSE,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
+  await sql`SELECT pg_advisory_lock(20260804, 1301)`;
 
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE`;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS seller_status TEXT NOT NULL DEFAULT 'active'`;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS blocked_reason TEXT`;
-  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`;
+  try {
+    await sql`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        phone TEXT,
+        telegram TEXT,
+        instagram TEXT,
+        roles TEXT[] NOT NULL DEFAULT ARRAY['user']::TEXT[],
+        is_blocked BOOLEAN NOT NULL DEFAULT FALSE,
+        profile_completed BOOLEAN NOT NULL DEFAULT FALSE,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS auth_sessions (
-      token_hash TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      expires_at TIMESTAMPTZ NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS seller_status TEXT NOT NULL DEFAULT 'active'`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS blocked_reason TEXT`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS email_verification_tokens (
-      token_hash TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      expires_at TIMESTAMPTZ NOT NULL,
-      consumed_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS auth_sessions (
+        token_hash TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS listings (
-      id TEXT PRIMARY KEY,
-      slug TEXT NOT NULL UNIQUE,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      title TEXT NOT NULL,
-      description TEXT NOT NULL,
-      price NUMERIC(12, 2) NOT NULL DEFAULT 0,
-      category_id TEXT NOT NULL,
-      condition TEXT NOT NULL,
-      district TEXT,
-      phone TEXT,
-      telegram TEXT,
-      instagram TEXT,
-      preferred_contact TEXT NOT NULL,
-      city TEXT NOT NULL DEFAULT 'Тернопіль',
-      currency TEXT NOT NULL DEFAULT 'UAH',
-      images JSONB NOT NULL DEFAULT '[]'::JSONB,
-      status TEXT NOT NULL DEFAULT 'pending',
-      moderation_status TEXT NOT NULL DEFAULT 'pending',
-      moderation_comment TEXT,
-      moderated_by TEXT REFERENCES users(id) ON DELETE SET NULL,
-      moderated_at TIMESTAMPTZ,
-      is_featured BOOLEAN NOT NULL DEFAULT FALSE,
-      views INTEGER NOT NULL DEFAULT 0,
-      favorites_count INTEGER NOT NULL DEFAULT 0,
-      expires_at TIMESTAMPTZ NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS email_verification_tokens (
+        token_hash TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        expires_at TIMESTAMPTZ NOT NULL,
+        consumed_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
 
-  await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderation_comment TEXT`;
-  await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderated_by TEXT REFERENCES users(id) ON DELETE SET NULL`;
-  await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderated_at TIMESTAMPTZ`;
+    await sql`
+      CREATE TABLE IF NOT EXISTS listings (
+        id TEXT PRIMARY KEY,
+        slug TEXT NOT NULL UNIQUE,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+        category_id TEXT NOT NULL,
+        condition TEXT NOT NULL,
+        district TEXT,
+        phone TEXT,
+        telegram TEXT,
+        instagram TEXT,
+        preferred_contact TEXT NOT NULL,
+        city TEXT NOT NULL DEFAULT 'Тернопіль',
+        currency TEXT NOT NULL DEFAULT 'UAH',
+        images JSONB NOT NULL DEFAULT '[]'::JSONB,
+        status TEXT NOT NULL DEFAULT 'pending',
+        moderation_status TEXT NOT NULL DEFAULT 'pending',
+        moderation_comment TEXT,
+        moderated_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+        moderated_at TIMESTAMPTZ,
+        is_featured BOOLEAN NOT NULL DEFAULT FALSE,
+        views INTEGER NOT NULL DEFAULT 0,
+        favorites_count INTEGER NOT NULL DEFAULT 0,
+        expires_at TIMESTAMPTZ NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS seller_profiles (
-      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-      status TEXT NOT NULL DEFAULT 'active',
-      listings_count INTEGER NOT NULL DEFAULT 0,
-      rating NUMERIC(3, 2) NOT NULL DEFAULT 0,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
+    await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderation_comment TEXT`;
+    await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderated_by TEXT REFERENCES users(id) ON DELETE SET NULL`;
+    await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderated_at TIMESTAMPTZ`;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS owner_claims (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      place_name TEXT NOT NULL,
-      business_email TEXT,
-      phone TEXT,
-      address TEXT,
-      website TEXT,
-      message TEXT,
-      status TEXT NOT NULL DEFAULT 'pending',
-      moderation_comment TEXT,
-      moderator_id TEXT REFERENCES users(id) ON DELETE SET NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS seller_profiles (
+        user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        status TEXT NOT NULL DEFAULT 'active',
+        listings_count INTEGER NOT NULL DEFAULT 0,
+        rating NUMERIC(3, 2) NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS reports (
-      id TEXT PRIMARY KEY,
-      reporter_id TEXT REFERENCES users(id) ON DELETE SET NULL,
-      entity_type TEXT NOT NULL,
-      entity_id TEXT NOT NULL,
-      reason TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'pending',
-      moderation_comment TEXT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS owner_claims (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        place_name TEXT NOT NULL,
+        business_email TEXT,
+        phone TEXT,
+        address TEXT,
+        website TEXT,
+        message TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        moderation_comment TEXT,
+        moderator_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS notifications (
-      id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      type TEXT NOT NULL,
-      title TEXT NOT NULL,
-      body TEXT NOT NULL,
-      read_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS reports (
+        id TEXT PRIMARY KEY,
+        reporter_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        moderation_comment TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS audit_logs (
-      id TEXT PRIMARY KEY,
-      actor_id TEXT REFERENCES users(id) ON DELETE SET NULL,
-      action TEXT NOT NULL,
-      entity_type TEXT NOT NULL,
-      entity_id TEXT,
-      details JSONB NOT NULL DEFAULT '{}'::JSONB,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type TEXT NOT NULL,
+        title TEXT NOT NULL,
+        body TEXT NOT NULL,
+        read_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
 
-  await sql`CREATE INDEX IF NOT EXISTS auth_sessions_user_id_idx ON auth_sessions (user_id)`;
-  await sql`CREATE INDEX IF NOT EXISTS auth_sessions_expires_at_idx ON auth_sessions (expires_at)`;
-  await sql`CREATE INDEX IF NOT EXISTS email_verification_user_idx ON email_verification_tokens (user_id, expires_at)`;
-  await sql`CREATE INDEX IF NOT EXISTS listings_user_id_idx ON listings (user_id)`;
-  await sql`CREATE INDEX IF NOT EXISTS listings_status_idx ON listings (status, moderation_status)`;
-  await sql`CREATE INDEX IF NOT EXISTS owner_claims_user_idx ON owner_claims (user_id, status)`;
-  await sql`CREATE INDEX IF NOT EXISTS owner_claims_status_idx ON owner_claims (status, created_at)`;
-  await sql`CREATE INDEX IF NOT EXISTS reports_status_idx ON reports (status, created_at)`;
-  await sql`CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, read_at, created_at DESC)`;
-  await sql`CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON audit_logs (created_at DESC)`;
-  await sql`CREATE INDEX IF NOT EXISTS users_roles_idx ON users USING GIN (roles)`;
+    await sql`
+      CREATE TABLE IF NOT EXISTS audit_logs (
+        id TEXT PRIMARY KEY,
+        actor_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+        action TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT,
+        details JSONB NOT NULL DEFAULT '{}'::JSONB,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+
+    await sql`CREATE INDEX IF NOT EXISTS auth_sessions_user_id_idx ON auth_sessions (user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS auth_sessions_expires_at_idx ON auth_sessions (expires_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS email_verification_user_idx ON email_verification_tokens (user_id, expires_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS listings_user_id_idx ON listings (user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS listings_status_idx ON listings (status, moderation_status)`;
+    await sql`CREATE INDEX IF NOT EXISTS owner_claims_user_idx ON owner_claims (user_id, status)`;
+    await sql`CREATE INDEX IF NOT EXISTS owner_claims_status_idx ON owner_claims (status, created_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS reports_status_idx ON reports (status, created_at)`;
+    await sql`CREATE INDEX IF NOT EXISTS reports_entity_idx ON reports (entity_type, entity_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, read_at, created_at DESC)`;
+    await sql`CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON audit_logs (created_at DESC)`;
+    await sql`CREATE INDEX IF NOT EXISTS users_roles_idx ON users USING GIN (roles)`;
+  } finally {
+    await sql`SELECT pg_advisory_unlock(20260804, 1301)`;
+  }
 }
 
 function hashToken(token: string) {
@@ -461,6 +524,73 @@ function toAuditLogSummary(row: {
   };
 }
 
+function toUserListingSummary(row: {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  price: string | number;
+  currency?: string | null;
+  category_id: string;
+  condition: string;
+  district: string | null;
+  status: string;
+  moderation_status: ModerationStatus;
+  moderation_comment: string | null;
+  created_at: string;
+  updated_at: string;
+  expires_at: string;
+}): UserListingSummary {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    price: Number(row.price),
+    currency: row.currency || "UAH",
+    categoryId: row.category_id,
+    condition: row.condition,
+    district: row.district || undefined,
+    status: row.status as ListingStatus,
+    moderationStatus: row.moderation_status,
+    moderationComment: row.moderation_comment || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    expiresAt: row.expires_at,
+    publicHref: `/market/${row.slug}`,
+  };
+}
+
+function toReportSummary(row: {
+  id: string;
+  reporter_id: string | null;
+  reporter_name: string | null;
+  reporter_email: string | null;
+  entity_type: string;
+  entity_id: string;
+  entity_title: string | null;
+  reason: string;
+  status: string;
+  moderation_comment: string | null;
+  created_at: string;
+  updated_at: string;
+}): ReportSummary {
+  return {
+    id: row.id,
+    reporterId: row.reporter_id || undefined,
+    reporterName: row.reporter_name || undefined,
+    reporterEmail: row.reporter_email || undefined,
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    entityTitle: row.entity_title || undefined,
+    reason: row.reason,
+    status: row.status,
+    moderationComment: row.moderation_comment || undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 export async function writeAuditLog(input: {
   actorId?: string;
   action: string;
@@ -501,6 +631,40 @@ export async function createNotification(input: {
     `,
     [randomUUID(), input.userId, input.type, input.title, input.body],
   );
+}
+
+export async function getUserNotifications(
+  userId: string,
+  limit = 30,
+): Promise<NotificationSummary[]> {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      SELECT id, type, title, body, read_at, created_at
+      FROM notifications
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT $2
+    `,
+    [userId, limit],
+  )) as Array<{
+    id: string;
+    type: string;
+    title: string;
+    body: string;
+    read_at: string | null;
+    created_at: string;
+  }>;
+
+  return rows.map((row) => ({
+    id: row.id,
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    readAt: row.read_at || undefined,
+    createdAt: row.created_at,
+  }));
 }
 
 export async function getUserByEmail(email: string) {
@@ -815,44 +979,257 @@ export async function getUserListings(userId: string) {
 
   const rows = (await getSql().query(
     `
-      SELECT l.*, u.display_name AS author_name, u.email AS author_email
-      FROM listings l
-      JOIN users u ON u.id = l.user_id
-      WHERE l.user_id = $1
-      ORDER BY l.created_at DESC
+      SELECT *
+      FROM listings
+      WHERE user_id = $1
+      ORDER BY created_at DESC
       LIMIT 30
     `,
     [userId],
-  )) as Array<
-    {
-      author_name: string;
-      author_email: string;
-    } & {
-      id: string;
-      slug: string;
-      title: string;
-      description: string;
-      price: string;
-      category_id: string;
-      status: string;
-      moderation_status: ModerationStatus;
-      created_at: string;
-    }
-  >;
+  )) as Array<{
+    id: string;
+    slug: string;
+    title: string;
+    description: string;
+    price: string;
+    currency: string;
+    category_id: string;
+    condition: string;
+    district: string | null;
+    status: string;
+    moderation_status: ModerationStatus;
+    moderation_comment: string | null;
+    created_at: string;
+    updated_at: string;
+    expires_at: string;
+  }>;
 
-  return rows.map((row) => ({
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
-    description: row.description,
-    price: Number(row.price),
-    categoryId: row.category_id,
-    status: row.status,
-    moderationStatus: row.moderation_status,
+  return rows.map(toUserListingSummary);
+}
+
+export async function getPublicListingBySlug(slug: string): Promise<PublicListingDetail | null> {
+  if (!isDatabaseConfigured()) {
+    return null;
+  }
+
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      SELECT l.*, u.display_name AS author_name
+      FROM listings l
+      JOIN users u ON u.id = l.user_id
+      WHERE l.slug = $1
+        AND l.status = 'active'
+        AND l.moderation_status = 'approved'
+        AND l.expires_at > NOW()
+      LIMIT 1
+    `,
+    [sanitizeText(slug, 160)],
+  )) as Array<{
+    id: string;
+    slug: string;
+    title: string;
+    description: string;
+    price: string;
+    currency: string;
+    category_id: string;
+    condition: string;
+    district: string | null;
+    phone: string | null;
+    telegram: string | null;
+    instagram: string | null;
+    preferred_contact: string;
+    status: string;
+    moderation_status: ModerationStatus;
+    moderation_comment: string | null;
+    views: number;
+    favorites_count: number;
+    expires_at: string;
+    created_at: string;
+    updated_at: string;
+    author_name: string;
+  }>;
+  const row = rows[0];
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    ...toUserListingSummary(row),
+    phone: row.phone || undefined,
+    telegram: row.telegram || undefined,
+    instagram: row.instagram || undefined,
+    preferredContact: row.preferred_contact,
     authorName: row.author_name,
-    authorEmail: row.author_email,
-    createdAt: row.created_at,
-  }));
+    views: Number(row.views || 0),
+    favoritesCount: Number(row.favorites_count || 0),
+  };
+}
+
+export async function updateOwnListingStatus(input: {
+  userId: string;
+  listingId: string;
+  status: Extract<ListingStatus, "pending" | "sold" | "archived" | "deleted">;
+}) {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      UPDATE listings
+      SET status = $3,
+          moderation_status = CASE WHEN $3 = 'pending' THEN 'pending' ELSE moderation_status END,
+          moderation_comment = CASE WHEN $3 = 'pending' THEN NULL ELSE moderation_comment END,
+          moderated_by = CASE WHEN $3 = 'pending' THEN NULL ELSE moderated_by END,
+          moderated_at = CASE WHEN $3 = 'pending' THEN NULL ELSE moderated_at END,
+          expires_at = CASE
+            WHEN $3 = 'pending' AND expires_at <= NOW() THEN NOW() + INTERVAL '30 days'
+            ELSE expires_at
+          END,
+          updated_at = NOW()
+      WHERE id = $1
+        AND user_id = $2
+        AND status <> 'deleted'
+      RETURNING *
+    `,
+    [input.listingId, input.userId, input.status],
+  )) as Array<{
+    id: string;
+    slug: string;
+    title: string;
+    description: string;
+    price: string;
+    currency: string;
+    category_id: string;
+    condition: string;
+    district: string | null;
+    status: string;
+    moderation_status: ModerationStatus;
+    moderation_comment: string | null;
+    created_at: string;
+    updated_at: string;
+    expires_at: string;
+  }>;
+  const listing = rows[0] ? toUserListingSummary(rows[0]) : null;
+
+  if (listing) {
+    await writeAuditLog({
+      actorId: input.userId,
+      action: "listing.status_updated",
+      entityType: "listing",
+      entityId: input.listingId,
+      details: { status: input.status, slug: listing.slug },
+    });
+  }
+
+  return listing;
+}
+
+export async function createReport(input: {
+  reporterId?: string;
+  entityType: string;
+  entityId: string;
+  reason: string;
+}) {
+  await ensureDatabaseSchema();
+
+  const id = randomUUID();
+
+  await getSql().query(
+    `
+      INSERT INTO reports (id, reporter_id, entity_type, entity_id, reason)
+      VALUES ($1, $2, $3, $4, $5)
+    `,
+    [
+      id,
+      input.reporterId || null,
+      sanitizeText(input.entityType, 40),
+      sanitizeText(input.entityId, 160),
+      sanitizeText(input.reason, 1000),
+    ],
+  );
+  await writeAuditLog({
+    actorId: input.reporterId,
+    action: "report.created",
+    entityType: "report",
+    entityId: id,
+    details: { entityType: input.entityType, entityId: input.entityId },
+  });
+
+  return id;
+}
+
+async function getReports(limit = 25) {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      SELECT
+        r.*,
+        u.display_name AS reporter_name,
+        u.email AS reporter_email,
+        COALESCE(l.title, r.entity_id) AS entity_title
+      FROM reports r
+      LEFT JOIN users u ON u.id = r.reporter_id
+      LEFT JOIN listings l ON r.entity_type = 'listing' AND l.id = r.entity_id
+      ORDER BY
+        CASE WHEN r.status = 'pending' THEN 0 ELSE 1 END,
+        r.created_at DESC
+      LIMIT $1
+    `,
+    [limit],
+  )) as Array<{
+    id: string;
+    reporter_id: string | null;
+    reporter_name: string | null;
+    reporter_email: string | null;
+    entity_type: string;
+    entity_id: string;
+    entity_title: string | null;
+    reason: string;
+    status: string;
+    moderation_comment: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+
+  return rows.map(toReportSummary);
+}
+
+async function getReportById(reportId: string) {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      SELECT
+        r.*,
+        u.display_name AS reporter_name,
+        u.email AS reporter_email,
+        COALESCE(l.title, r.entity_id) AS entity_title
+      FROM reports r
+      LEFT JOIN users u ON u.id = r.reporter_id
+      LEFT JOIN listings l ON r.entity_type = 'listing' AND l.id = r.entity_id
+      WHERE r.id = $1
+      LIMIT 1
+    `,
+    [reportId],
+  )) as Array<{
+    id: string;
+    reporter_id: string | null;
+    reporter_name: string | null;
+    reporter_email: string | null;
+    entity_type: string;
+    entity_id: string;
+    entity_title: string | null;
+    reason: string;
+    status: string;
+    moderation_comment: string | null;
+    created_at: string;
+    updated_at: string;
+  }>;
+
+  return rows[0] ? toReportSummary(rows[0]) : null;
 }
 
 export async function getAdminDashboard(): Promise<AdminDashboardData> {
@@ -885,6 +1262,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
       category_id: string;
       status: string;
       moderation_status: ModerationStatus;
+      moderation_comment: string | null;
       author_name: string;
       author_email: string;
       created_at: string;
@@ -916,12 +1294,14 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
       created_at: string;
     }>
   >;
+  const reportsPromise = getReports(25);
   const statsPromise = sql.query(
     `
         SELECT
           (SELECT COUNT(*)::INT FROM users) AS users,
           (SELECT COUNT(*)::INT FROM listings WHERE moderation_status = 'pending') AS pending_listings,
           (SELECT COUNT(*)::INT FROM owner_claims WHERE status = 'pending') AS owner_claims,
+          (SELECT COUNT(*)::INT FROM reports WHERE status = 'pending') AS pending_reports,
           (SELECT COUNT(*)::INT FROM listings WHERE status = 'active') AS active_listings,
           (SELECT COUNT(*)::INT FROM users WHERE is_blocked = TRUE) AS blocked_users
       `,
@@ -930,21 +1310,24 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
       users: number;
       pending_listings: number;
       owner_claims: number;
+      pending_reports: number;
       active_listings: number;
       blocked_users: number;
     }>
   >;
-  const [users, listings, ownerClaims, auditLogs, statsRows] = await Promise.all([
+  const [users, listings, ownerClaims, auditLogs, reports, statsRows] = await Promise.all([
     usersPromise,
     listingsPromise,
     ownerClaimsPromise,
     auditLogsPromise,
+    reportsPromise,
     statsPromise,
   ]);
   const stats = statsRows[0] || {
     users: 0,
     pending_listings: 0,
     owner_claims: 0,
+    pending_reports: 0,
     active_listings: 0,
     blocked_users: 0,
   };
@@ -954,6 +1337,7 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
       users: Number(stats.users),
       pendingListings: Number(stats.pending_listings),
       ownerClaims: Number(stats.owner_claims),
+      pendingReports: Number(stats.pending_reports),
       activeListings: Number(stats.active_listings),
       blockedUsers: Number(stats.blocked_users),
     },
@@ -967,11 +1351,13 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
       categoryId: row.category_id,
       status: row.status,
       moderationStatus: row.moderation_status,
+      moderationComment: row.moderation_comment || undefined,
       authorName: row.author_name,
       authorEmail: row.author_email,
       createdAt: row.created_at,
     })),
     ownerClaims: ownerClaims.map(toOwnerClaimSummary),
+    reports,
     auditLogs: auditLogs.map(toAuditLogSummary),
   };
 }
@@ -982,6 +1368,7 @@ export async function getModerationDashboard() {
   return {
     listings: adminData.listings.filter((listing) => listing.moderationStatus === "pending"),
     ownerClaims: adminData.ownerClaims.filter((claim) => claim.status === "pending"),
+    reports: adminData.reports.filter((report) => report.status === "pending"),
     auditLogs: adminData.auditLogs,
   };
 }
@@ -1145,6 +1532,63 @@ export async function moderateOwnerClaim(input: {
   return claim;
 }
 
+export async function moderateReport(input: {
+  actorId: string;
+  reportId: string;
+  status: "reviewed" | "dismissed" | "blocked";
+  comment?: string;
+}) {
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      UPDATE reports
+      SET status = $2,
+          moderation_comment = NULLIF($3, ''),
+          updated_at = NOW()
+      WHERE id = $1
+      RETURNING reporter_id, entity_type, entity_id
+    `,
+    [input.reportId, input.status, sanitizeText(input.comment, 500)],
+  )) as Array<{ reporter_id: string | null; entity_type: string; entity_id: string }>;
+  const report = rows[0] || null;
+
+  if (!report) {
+    return null;
+  }
+
+  if (input.status === "blocked" && report.entity_type === "listing") {
+    await moderateListing({
+      actorId: input.actorId,
+      listingId: report.entity_id,
+      moderationStatus: "blocked",
+      comment: input.comment || "Заблоковано після розгляду скарги.",
+    });
+  }
+
+  if (report.reporter_id) {
+    await createNotification({
+      userId: report.reporter_id,
+      type: "report_moderation",
+      title: "Скаргу розглянуто",
+      body:
+        input.status === "dismissed"
+          ? "Модератор розглянув скаргу і не знайшов порушення."
+          : "Модератор розглянув скаргу та застосував рішення.",
+    });
+  }
+
+  await writeAuditLog({
+    actorId: input.actorId,
+    action: "report.moderated",
+    entityType: "report",
+    entityId: input.reportId,
+    details: { status: input.status, entityType: report.entity_type, entityId: report.entity_id },
+  });
+
+  return getReportById(input.reportId);
+}
+
 export async function getListingCardsFromDatabase(limit = 24): Promise<HomeCard[]> {
   if (!isDatabaseConfigured()) {
     return [];
@@ -1171,5 +1615,70 @@ export async function getListingCardsFromDatabase(limit = 24): Promise<HomeCard[
     href: `/market/${listing.slug}`,
     meta: listing.district || "Тернопіль",
     badge: `${Number(listing.price).toLocaleString("uk-UA")} ${listing.currency}`,
+  }));
+}
+
+export async function searchListingCardsFromDatabase(
+  query: string,
+  limit = 24,
+): Promise<HomeCard[]> {
+  if (!isDatabaseConfigured()) {
+    return [];
+  }
+
+  await ensureDatabaseSchema();
+
+  const searchQuery = sanitizeText(query, 120);
+  const rows = (await getSql().query(
+    `
+      SELECT slug, title, description, price, currency, district, status, created_at
+      FROM listings
+      WHERE status = 'active'
+        AND moderation_status = 'approved'
+        AND expires_at > NOW()
+        AND (
+          $2 = ''
+          OR title ILIKE ('%' || $2 || '%')
+          OR description ILIKE ('%' || $2 || '%')
+          OR district ILIKE ('%' || $2 || '%')
+        )
+      ORDER BY created_at DESC
+      LIMIT $1
+    `,
+    [limit, searchQuery],
+  )) as ListingCardRow[];
+
+  return rows.map((listing) => ({
+    title: listing.title,
+    description: listing.description,
+    href: `/market/${listing.slug}`,
+    meta: listing.district || "Тернопіль",
+    badge: `${Number(listing.price).toLocaleString("uk-UA")} ${listing.currency}`,
+  }));
+}
+
+export async function getListingSitemapRoutes(limit = 500) {
+  if (!isDatabaseConfigured()) {
+    return [];
+  }
+
+  await ensureDatabaseSchema();
+
+  const rows = (await getSql().query(
+    `
+      SELECT slug, updated_at
+      FROM listings
+      WHERE status = 'active'
+        AND moderation_status = 'approved'
+        AND expires_at > NOW()
+      ORDER BY updated_at DESC
+      LIMIT $1
+    `,
+    [limit],
+  )) as Array<{ slug: string; updated_at: string }>;
+
+  return rows.map((row) => ({
+    route: `/market/${row.slug}`,
+    lastModified: new Date(row.updated_at),
   }));
 }
