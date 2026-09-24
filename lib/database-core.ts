@@ -1,6 +1,11 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
-import type { HomeCard, ListingStatus, ModerationStatus, UserRole } from "@/types";
+import type {
+  HomeCard,
+  ListingStatus,
+  ModerationStatus,
+  UserRole,
+} from "@/types";
 
 export class DatabaseNotConfiguredError extends Error {
   constructor() {
@@ -267,7 +272,13 @@ type ListingCardRow = {
   created_at: string;
 };
 
-const validRoles = new Set<UserRole>(["guest", "user", "owner", "moderator", "admin"]);
+const validRoles = new Set<UserRole>([
+  "guest",
+  "user",
+  "owner",
+  "moderator",
+  "admin",
+]);
 const privilegedRoles = new Set<UserRole>(["owner", "moderator", "admin"]);
 const defaultSiteSettings: SiteSettingSummary[] = [
   { key: "site_title", value: "Де Тернопіль" },
@@ -276,7 +287,10 @@ const defaultSiteSettings: SiteSettingSummary[] = [
     value: "Міський інформаційний портал Тернополя.",
   },
   { key: "contact_telegram", value: "@no_name_te" },
-  { key: "seo_keywords", value: "Тернопіль, новини, заклади, події, барахолка" },
+  {
+    key: "seo_keywords",
+    value: "Тернопіль, новини, заклади, події, барахолка",
+  },
   { key: "homepage_notice", value: "" },
 ];
 const databaseUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
@@ -303,7 +317,9 @@ export function normalizeRoles(value: unknown): UserRole[] {
     return [];
   }
 
-  const roles = value.filter((role): role is UserRole => validRoles.has(role as UserRole));
+  const roles = value.filter((role): role is UserRole =>
+    validRoles.has(role as UserRole),
+  );
 
   return Array.from(new Set(roles));
 }
@@ -312,7 +328,10 @@ export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export function sanitizeText(value: string | undefined | null, maxLength = 3000) {
+export function sanitizeText(
+  value: string | undefined | null,
+  maxLength = 3000,
+) {
   return (value || "")
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
     .trim()
@@ -324,7 +343,8 @@ export function toPublicUser(row: DatabaseUserRow): PublicUser {
   const effectiveRoles = row.email_verified
     ? normalizedRoles
     : normalizedRoles.filter((role) => !privilegedRoles.has(role));
-  const roles: UserRole[] = effectiveRoles.length > 0 ? effectiveRoles : ["user"];
+  const roles: UserRole[] =
+    effectiveRoles.length > 0 ? effectiveRoles : ["user"];
 
   return {
     uid: row.id,
@@ -350,7 +370,9 @@ export function getAdminRolesForEmail(email: string): UserRole[] {
     .map((value) => normalizeEmail(value))
     .filter(Boolean);
 
-  return adminEmails.includes(normalizeEmail(email)) ? ["user", "admin"] : ["user"];
+  return adminEmails.includes(normalizeEmail(email))
+    ? ["user", "admin"]
+    : ["user"];
 }
 
 export async function ensureDatabaseSchema() {
@@ -359,7 +381,10 @@ export async function ensureDatabaseSchema() {
   }
 
   if (!schemaReady) {
-    schemaReady = createSchema();
+    schemaReady = createSchema().catch((error) => {
+      schemaReady = null;
+      throw error;
+    });
   }
 
   await schemaReady;
@@ -367,11 +392,9 @@ export async function ensureDatabaseSchema() {
 
 async function createSchema() {
   const sql = getSql();
-
-  await sql`SELECT pg_advisory_lock(20260804, 1301)`;
-
-  try {
-    await sql`
+  // Neon HTTP queries do not share a database session, so session advisory
+  // locks cannot protect the separate idempotent schema statements below.
+  await sql`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
@@ -388,13 +411,13 @@ async function createSchema() {
       )
     `;
 
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE`;
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`;
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS seller_status TEXT NOT NULL DEFAULT 'active'`;
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS blocked_reason TEXT`;
-    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS seller_status TEXT NOT NULL DEFAULT 'active'`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS blocked_reason TEXT`;
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS auth_sessions (
         token_hash TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -403,7 +426,7 @@ async function createSchema() {
       )
     `;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS email_verification_tokens (
         token_hash TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -413,7 +436,7 @@ async function createSchema() {
       )
     `;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS password_reset_tokens (
         token_hash TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -423,7 +446,7 @@ async function createSchema() {
       )
     `;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS listings (
         id TEXT PRIMARY KEY,
         slug TEXT NOT NULL UNIQUE,
@@ -455,11 +478,11 @@ async function createSchema() {
       )
     `;
 
-    await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderation_comment TEXT`;
-    await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderated_by TEXT REFERENCES users(id) ON DELETE SET NULL`;
-    await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderated_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderation_comment TEXT`;
+  await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderated_by TEXT REFERENCES users(id) ON DELETE SET NULL`;
+  await sql`ALTER TABLE listings ADD COLUMN IF NOT EXISTS moderated_at TIMESTAMPTZ`;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS seller_profiles (
         user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
         status TEXT NOT NULL DEFAULT 'active',
@@ -470,7 +493,7 @@ async function createSchema() {
       )
     `;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS owner_claims (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -488,7 +511,7 @@ async function createSchema() {
       )
     `;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS reports (
         id TEXT PRIMARY KEY,
         reporter_id TEXT REFERENCES users(id) ON DELETE SET NULL,
@@ -502,7 +525,7 @@ async function createSchema() {
       )
     `;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS reviews (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -518,7 +541,7 @@ async function createSchema() {
       )
     `;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS notifications (
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -530,7 +553,7 @@ async function createSchema() {
       )
     `;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS audit_logs (
         id TEXT PRIMARY KEY,
         actor_id TEXT REFERENCES users(id) ON DELETE SET NULL,
@@ -542,7 +565,7 @@ async function createSchema() {
       )
     `;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS admin_content_items (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL,
@@ -558,7 +581,7 @@ async function createSchema() {
       )
     `;
 
-    await sql`
+  await sql`
       CREATE TABLE IF NOT EXISTS site_settings (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL DEFAULT '',
@@ -567,26 +590,23 @@ async function createSchema() {
       )
     `;
 
-    await sql`CREATE INDEX IF NOT EXISTS auth_sessions_user_id_idx ON auth_sessions (user_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS auth_sessions_expires_at_idx ON auth_sessions (expires_at)`;
-    await sql`CREATE INDEX IF NOT EXISTS email_verification_user_idx ON email_verification_tokens (user_id, expires_at)`;
-    await sql`CREATE INDEX IF NOT EXISTS password_reset_user_idx ON password_reset_tokens (user_id, expires_at)`;
-    await sql`CREATE INDEX IF NOT EXISTS listings_user_id_idx ON listings (user_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS listings_status_idx ON listings (status, moderation_status)`;
-    await sql`CREATE INDEX IF NOT EXISTS owner_claims_user_idx ON owner_claims (user_id, status)`;
-    await sql`CREATE INDEX IF NOT EXISTS owner_claims_status_idx ON owner_claims (status, created_at)`;
-    await sql`CREATE INDEX IF NOT EXISTS reports_status_idx ON reports (status, created_at)`;
-    await sql`CREATE INDEX IF NOT EXISTS reports_entity_idx ON reports (entity_type, entity_id)`;
-    await sql`CREATE INDEX IF NOT EXISTS reviews_user_idx ON reviews (user_id, created_at DESC)`;
-    await sql`CREATE INDEX IF NOT EXISTS reviews_target_idx ON reviews (target_href, status, created_at DESC)`;
-    await sql`CREATE INDEX IF NOT EXISTS reviews_status_idx ON reviews (status, created_at DESC)`;
-    await sql`CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, read_at, created_at DESC)`;
-    await sql`CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON audit_logs (created_at DESC)`;
-    await sql`CREATE INDEX IF NOT EXISTS users_roles_idx ON users USING GIN (roles)`;
-    await sql`CREATE INDEX IF NOT EXISTS admin_content_items_type_status_idx ON admin_content_items (type, status, order_index, updated_at DESC)`;
-  } finally {
-    await sql`SELECT pg_advisory_unlock(20260804, 1301)`;
-  }
+  await sql`CREATE INDEX IF NOT EXISTS auth_sessions_user_id_idx ON auth_sessions (user_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS auth_sessions_expires_at_idx ON auth_sessions (expires_at)`;
+  await sql`CREATE INDEX IF NOT EXISTS email_verification_user_idx ON email_verification_tokens (user_id, expires_at)`;
+  await sql`CREATE INDEX IF NOT EXISTS password_reset_user_idx ON password_reset_tokens (user_id, expires_at)`;
+  await sql`CREATE INDEX IF NOT EXISTS listings_user_id_idx ON listings (user_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS listings_status_idx ON listings (status, moderation_status)`;
+  await sql`CREATE INDEX IF NOT EXISTS owner_claims_user_idx ON owner_claims (user_id, status)`;
+  await sql`CREATE INDEX IF NOT EXISTS owner_claims_status_idx ON owner_claims (status, created_at)`;
+  await sql`CREATE INDEX IF NOT EXISTS reports_status_idx ON reports (status, created_at)`;
+  await sql`CREATE INDEX IF NOT EXISTS reports_entity_idx ON reports (entity_type, entity_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS reviews_user_idx ON reviews (user_id, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS reviews_target_idx ON reviews (target_href, status, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS reviews_status_idx ON reviews (status, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, read_at, created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS audit_logs_created_idx ON audit_logs (created_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS users_roles_idx ON users USING GIN (roles)`;
+  await sql`CREATE INDEX IF NOT EXISTS admin_content_items_type_status_idx ON admin_content_items (type, status, order_index, updated_at DESC)`;
 }
 
 function hashToken(token: string) {
@@ -913,9 +933,10 @@ export async function getUserNotifications(
 export async function getUserByEmail(email: string) {
   await ensureDatabaseSchema();
 
-  const rows = (await getSql().query("SELECT * FROM users WHERE email = $1 LIMIT 1", [
-    normalizeEmail(email),
-  ])) as DatabaseUserRow[];
+  const rows = (await getSql().query(
+    "SELECT * FROM users WHERE email = $1 LIMIT 1",
+    [normalizeEmail(email)],
+  )) as DatabaseUserRow[];
 
   return rows[0] || null;
 }
@@ -923,9 +944,10 @@ export async function getUserByEmail(email: string) {
 export async function getUserById(id: string) {
   await ensureDatabaseSchema();
 
-  const rows = (await getSql().query("SELECT * FROM users WHERE id = $1 LIMIT 1", [
-    id,
-  ])) as DatabaseUserRow[];
+  const rows = (await getSql().query(
+    "SELECT * FROM users WHERE id = $1 LIMIT 1",
+    [id],
+  )) as DatabaseUserRow[];
 
   return rows[0] || null;
 }
@@ -979,9 +1001,10 @@ export async function syncAdminRoleFromEnv(user: DatabaseUserRow) {
 export async function markUserLastLogin(userId: string) {
   await ensureDatabaseSchema();
 
-  await getSql().query("UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1", [
-    userId,
-  ]);
+  await getSql().query(
+    "UPDATE users SET last_login_at = NOW(), updated_at = NOW() WHERE id = $1",
+    [userId],
+  );
 }
 
 export async function createEmailVerificationToken(userId: string) {
@@ -1083,7 +1106,10 @@ export async function verifyEmailToken(token: string) {
   return user ? await syncAdminRoleFromEnv(user) : null;
 }
 
-export async function resetPasswordWithToken(token: string, passwordHash: string) {
+export async function resetPasswordWithToken(
+  token: string,
+  passwordHash: string,
+) {
   await ensureDatabaseSchema();
 
   const tokenHash = hashToken(token);
@@ -1116,7 +1142,9 @@ export async function resetPasswordWithToken(token: string, passwordHash: string
     [userId, passwordHash],
   )) as DatabaseUserRow[];
 
-  await getSql().query("DELETE FROM auth_sessions WHERE user_id = $1", [userId]);
+  await getSql().query("DELETE FROM auth_sessions WHERE user_id = $1", [
+    userId,
+  ]);
   await getSql().query(
     `
       UPDATE password_reset_tokens
@@ -1332,7 +1360,9 @@ export async function getUserListings(userId: string) {
   return rows.map(toUserListingSummary);
 }
 
-export async function getPublicListingBySlug(slug: string): Promise<PublicListingDetail | null> {
+export async function getPublicListingBySlug(
+  slug: string,
+): Promise<PublicListingDetail | null> {
   if (!isDatabaseConfigured()) {
     return null;
   }
@@ -1594,7 +1624,10 @@ export async function createReview(input: {
   return id;
 }
 
-export async function getUserReviews(userId: string, limit = 30): Promise<ReviewSummary[]> {
+export async function getUserReviews(
+  userId: string,
+  limit = 30,
+): Promise<ReviewSummary[]> {
   await ensureDatabaseSchema();
 
   const rows = (await getSql().query(
@@ -1629,7 +1662,10 @@ export async function getUserReviews(userId: string, limit = 30): Promise<Review
   return rows.map(toReviewSummary);
 }
 
-export async function getPublicReviews(targetHref: string, limit = 12): Promise<ReviewSummary[]> {
+export async function getPublicReviews(
+  targetHref: string,
+  limit = 12,
+): Promise<ReviewSummary[]> {
   if (!isDatabaseConfigured()) {
     return [];
   }
@@ -1923,7 +1959,9 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     content_items: 0,
     sent_notifications: 0,
   };
-  const savedSettings = new Map(settingRows.map((row) => [row.key, toSiteSettingSummary(row)]));
+  const savedSettings = new Map(
+    settingRows.map((row) => [row.key, toSiteSettingSummary(row)]),
+  );
 
   return {
     stats: {
@@ -1957,7 +1995,9 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     reviews,
     auditLogs: auditLogs.map(toAuditLogSummary),
     contentItems: contentRows.map(toAdminContentItemSummary),
-    settings: defaultSiteSettings.map((setting) => savedSettings.get(setting.key) || setting),
+    settings: defaultSiteSettings.map(
+      (setting) => savedSettings.get(setting.key) || setting,
+    ),
     notifications: notifications.map(toAdminNotificationSummary),
   };
 }
@@ -1966,8 +2006,12 @@ export async function getModerationDashboard() {
   const adminData = await getAdminDashboard();
 
   return {
-    listings: adminData.listings.filter((listing) => listing.moderationStatus === "pending"),
-    ownerClaims: adminData.ownerClaims.filter((claim) => claim.status === "pending"),
+    listings: adminData.listings.filter(
+      (listing) => listing.moderationStatus === "pending",
+    ),
+    ownerClaims: adminData.ownerClaims.filter(
+      (claim) => claim.status === "pending",
+    ),
     reports: adminData.reports.filter((report) => report.status === "pending"),
     reviews: adminData.reviews.filter((review) => review.status === "pending"),
     auditLogs: adminData.auditLogs,
@@ -2128,7 +2172,10 @@ export async function getPublishedAdminContentItems(
   return rows.map(toAdminContentItemSummary);
 }
 
-export async function deleteAdminContentItem(input: { actorId: string; id: string }) {
+export async function deleteAdminContentItem(input: {
+  actorId: string;
+  id: string;
+}) {
   await ensureDatabaseSchema();
 
   const rows = (await getSql().query(
@@ -2269,7 +2316,10 @@ export async function createSystemNotification(input: {
   return { sentCount: users.length, notificationIds };
 }
 
-export async function deleteAdminNotification(input: { actorId: string; id: string }) {
+export async function deleteAdminNotification(input: {
+  actorId: string;
+  id: string;
+}) {
   await ensureDatabaseSchema();
 
   const rows = (await getSql().query(
@@ -2356,12 +2406,16 @@ export async function updateUserAdministration(input: {
 export async function moderateListing(input: {
   actorId: string;
   listingId: string;
-  moderationStatus: Extract<ModerationStatus, "approved" | "rejected" | "hidden" | "blocked">;
+  moderationStatus: Extract<
+    ModerationStatus,
+    "approved" | "rejected" | "hidden" | "blocked"
+  >;
   comment?: string;
 }) {
   await ensureDatabaseSchema();
 
-  const publicStatus = input.moderationStatus === "approved" ? "active" : input.moderationStatus;
+  const publicStatus =
+    input.moderationStatus === "approved" ? "active" : input.moderationStatus;
   const rows = (await getSql().query(
     `
       UPDATE listings
@@ -2424,7 +2478,12 @@ export async function moderateOwnerClaim(input: {
       WHERE id = $1
       RETURNING *
     `,
-    [input.claimId, input.status, sanitizeText(input.comment, 500), input.actorId],
+    [
+      input.claimId,
+      input.status,
+      sanitizeText(input.comment, 500),
+      input.actorId,
+    ],
   )) as OwnerClaimRow[];
   const claim = rows[0] || null;
 
@@ -2480,7 +2539,11 @@ export async function moderateReport(input: {
       RETURNING reporter_id, entity_type, entity_id
     `,
     [input.reportId, input.status, sanitizeText(input.comment, 500)],
-  )) as Array<{ reporter_id: string | null; entity_type: string; entity_id: string }>;
+  )) as Array<{
+    reporter_id: string | null;
+    entity_type: string;
+    entity_id: string;
+  }>;
   const report = rows[0] || null;
 
   if (!report) {
@@ -2513,7 +2576,11 @@ export async function moderateReport(input: {
     action: "report.moderated",
     entityType: "report",
     entityId: input.reportId,
-    details: { status: input.status, entityType: report.entity_type, entityId: report.entity_id },
+    details: {
+      status: input.status,
+      entityType: report.entity_type,
+      entityId: report.entity_id,
+    },
   });
 
   return getReportById(input.reportId);
@@ -2522,7 +2589,10 @@ export async function moderateReport(input: {
 export async function moderateReview(input: {
   actorId: string;
   reviewId: string;
-  status: Extract<ModerationStatus, "approved" | "rejected" | "hidden" | "blocked">;
+  status: Extract<
+    ModerationStatus,
+    "approved" | "rejected" | "hidden" | "blocked"
+  >;
   comment?: string;
 }) {
   await ensureDatabaseSchema();
@@ -2564,7 +2634,9 @@ export async function moderateReview(input: {
   return getReviewById(input.reviewId);
 }
 
-export async function getListingCardsFromDatabase(limit = 24): Promise<HomeCard[]> {
+export async function getListingCardsFromDatabase(
+  limit = 24,
+): Promise<HomeCard[]> {
   if (!isDatabaseConfigured()) {
     return [];
   }
