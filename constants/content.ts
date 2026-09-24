@@ -960,8 +960,11 @@ export const popularPlaces = [
   .map((slug) => places.find((item) => item.slug === slug))
   .filter((item): item is PortalEntity => Boolean(item));
 export const popularLocations = locations.slice(0, 3);
-export const upcomingEvents = events.slice(0, 3);
 export const marketHighlights = listings.slice(0, 3);
+
+export function getUpcomingEvents(today = new Date().toISOString().slice(0, 10)) {
+  return events.filter((item) => item.date && item.date >= today);
+}
 
 export const allSearchItems = [
   ...newsItems.map((item) => ({ ...item, type: "Новини" })),

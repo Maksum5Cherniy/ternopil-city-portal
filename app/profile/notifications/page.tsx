@@ -43,7 +43,7 @@ export default async function ProfileNotificationsPage() {
     return (
       <NotificationsBlockedState
         title="База даних не налаштована"
-        description="Підключіть Neon Store у Vercel, щоб читати сповіщення профілю."
+        description="Сповіщення тимчасово недоступні. Спробуйте пізніше."
       />
     );
   }

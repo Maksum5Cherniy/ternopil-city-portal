@@ -42,7 +42,7 @@ export default async function ProfileFavoritesPage() {
     return (
       <FavoritesBlockedState
         title="База даних не налаштована"
-        description="Підключіть Neon Store у Vercel, щоб профіль відкривався server-side."
+        description="Профіль тимчасово недоступний. Спробуйте пізніше."
       />
     );
   }
@@ -65,7 +65,7 @@ export default async function ProfileFavoritesPage() {
       </p>
 
       <div className="mt-8">
-        <FavoritesClient />
+        <FavoritesClient userId={session.user.uid} />
       </div>
     </section>
   );

@@ -1,3 +1,4 @@
+import { rejectCrossOriginMutation } from "@/lib/request-security";
 import { NextResponse } from "next/server";
 import {
   clearSessionCookie,
@@ -17,7 +18,12 @@ export async function GET() {
   return NextResponse.json({ user: session.user });
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   const response = NextResponse.json({ ok: true });
 
   await revokeCurrentServerSession();

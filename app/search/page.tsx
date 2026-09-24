@@ -11,16 +11,24 @@ export const metadata: Metadata = {
   description: "Глобальний пошук по новинах, закладах, локаціях, подіях та оголошеннях.",
 };
 
+const categories = ["Усі", "Новини", "Заклади", "Локації", "Події", "Барахолка"] as const;
+
 type SearchPageProps = {
   searchParams?: Promise<{
     q?: string | string[];
+    type?: string | string[];
   }>;
 };
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const rawQuery = params?.q;
-  const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery || "").trim().toLowerCase();
+  const query = (Array.isArray(rawQuery) ? rawQuery[0] : rawQuery || "")
+    .trim()
+    .slice(0, 120)
+    .toLowerCase();
+  const rawType = Array.isArray(params?.type) ? params.type[0] : params?.type;
+  const selectedType = categories.find((category) => category === rawType) || "Усі";
   const adminItems = (await getPublishedAdminPortalEntities(undefined, 80)).map((item) => ({
     ...item,
     type:
@@ -32,17 +40,20 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             ? "Реклама"
             : "Головна",
   }));
+  const searchableItems = allSearchItems.filter((item) => item.type !== "Барахолка");
   const staticResults = query
-    ? [...adminItems, ...allSearchItems].filter((item) =>
+    ? [...adminItems, ...searchableItems].filter((item) =>
         `${item.title} ${item.description} ${item.meta || ""}`.toLowerCase().includes(query),
       )
-    : [...adminItems, ...allSearchItems];
+    : [...adminItems, ...searchableItems];
   const databaseListingItems = (await searchListingCardsFromDatabase(query).catch(() => [])).map(
     (item) => ({ ...item, type: "Барахолка" }),
   );
-  const results = Array.from(
+  const allResults = Array.from(
     new Map([...staticResults, ...databaseListingItems].map((item) => [item.href, item])).values(),
   );
+  const results =
+    selectedType === "Усі" ? allResults : allResults.filter((item) => item.type === selectedType);
 
   return (
     <section className="mx-auto w-full max-w-[920px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
@@ -57,11 +68,27 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             id="search-page-query"
             name="q"
             type="search"
+            maxLength={120}
             defaultValue={query}
             placeholder={uk.common.searchPlaceholder}
             className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted"
           />
         </div>
+        <label htmlFor="search-page-category" className="sr-only">
+          Розділ
+        </label>
+        <select
+          id="search-page-category"
+          name="type"
+          defaultValue={selectedType}
+          className="min-h-12 rounded-md border border-border bg-surface px-3 text-sm text-foreground"
+        >
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category === "Усі" ? "Усі розділи" : category}
+            </option>
+          ))}
+        </select>
         <button
           type="submit"
           className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-white"
@@ -71,7 +98,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         </button>
       </form>
 
-      <div className="mt-8 grid gap-3">
+      <p className="mt-7 text-sm text-muted" role="status">
+        {results.length === 0
+          ? "За цим запитом нічого не знайдено."
+          : `Знайдено: ${results.length}`}
+      </p>
+
+      <div className="mt-4 grid gap-3">
         {results.map((item) => (
           <Link
             key={`${item.type}-${item.href}`}

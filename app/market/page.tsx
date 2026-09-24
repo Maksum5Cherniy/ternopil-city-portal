@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Package, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import MarketExplorer, { type MarketItem } from "@/components/market/MarketExplorer";
 import { Badge } from "@/components/ui/Badge";
-import { listingCategories, listings } from "@/constants/content";
+import { listingCategories } from "@/constants/content";
 import { getListingCardsFromDatabase } from "@/lib/database";
 
 export const metadata: Metadata = {
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function MarketPage() {
   const databaseListings = (await getListingCardsFromDatabase()) as MarketItem[];
-  const items = databaseListings.length > 0 ? databaseListings : (listings as MarketItem[]);
+  const items = databaseListings;
   const activeCount = items.filter((item) => (item.status || "active") === "active").length;
 
   return (

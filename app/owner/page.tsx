@@ -59,7 +59,7 @@ export default async function OwnerPage() {
     return (
       <OwnerBlockedState
         title="База даних не налаштована"
-        description="Підключіть Neon Store у Vercel, щоб власники могли подавати заявки та керувати закладами."
+        description="Кабінет власника тимчасово недоступний. Спробуйте пізніше."
       />
     );
   }

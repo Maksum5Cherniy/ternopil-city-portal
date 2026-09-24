@@ -70,7 +70,6 @@ export async function sendEmailVerification(input: {
   const resend = getResend();
 
   if (!resend) {
-    console.info(`[email verification] ${input.email}: ${verificationUrl}`);
     return { sent: false, reason: "provider-missing" };
   }
 
@@ -111,7 +110,6 @@ export async function sendPasswordResetEmail(input: {
   const resend = getResend();
 
   if (!resend) {
-    console.info(`[password reset] ${input.email}: ${resetUrl}`);
     return { sent: false, reason: "provider-missing" };
   }
 

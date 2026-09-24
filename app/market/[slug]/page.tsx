@@ -3,13 +3,13 @@ import { notFound } from "next/navigation";
 import { DetailPage } from "@/components/content/DetailPage";
 import { ModulePage } from "@/components/content/ModulePage";
 import ReportListingForm from "@/components/market/ReportListingForm";
+import { listingCategories, type PortalEntity } from "@/constants/content";
 import {
-  findPortalEntity,
-  listingCategories,
-  listings,
-  type PortalEntity,
-} from "@/constants/content";
-import { getPublicListingBySlug, type PublicListingDetail } from "@/lib/database";
+  getListingCardsFromDatabase,
+  getPublicListingBySlug,
+  type PublicListingDetail,
+} from "@/lib/database";
+import type { HomeCard } from "@/types";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -74,27 +74,17 @@ function databaseListingToPortalEntity(item: PublicListingDetail): PortalEntity 
 }
 
 export function generateStaticParams() {
-  return [
-    ...listingCategories.map((item) => ({ slug: item.slug })),
-    ...listings.map((item) => ({ slug: item.slug })),
-  ];
+  return listingCategories.map((item) => ({ slug: item.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const category = listingCategories.find((item) => item.slug === slug);
-  const item = findPortalEntity(listings, slug);
 
-  if (category || item) {
+  if (category) {
     return {
-      title: category?.title || item?.title,
-      description: category
-        ? `Оголошення категорії ${category.title} у Тернополі.`
-        : item?.description,
-      robots:
-        item?.status === "sold" || item?.status === "archived"
-          ? { index: false, follow: true }
-          : undefined,
+      title: category.title,
+      description: `Оголошення категорії ${category.title} у Тернополі.`,
     };
   }
 
@@ -115,21 +105,17 @@ export default async function ListingDetailPage({ params }: PageProps) {
   const category = listingCategories.find((item) => item.slug === slug);
 
   if (category) {
+    const categoryListings = (await getListingCardsFromDatabase(100).catch(() => [])) as Array<
+      HomeCard & { category?: string }
+    >;
+
     return (
       <ModulePage
         eyebrow="Категорія барахолки"
         title={category.title}
         description={`Оголошення Тернополя у категорії "${category.title}" з фільтрами за ціною, станом і районом.`}
-        items={listings.filter((item) => item.category === category.slug)}
+        items={categoryListings.filter((item) => item.category === category.slug)}
       />
-    );
-  }
-
-  const item = findPortalEntity(listings, slug);
-
-  if (item) {
-    return (
-      <DetailPage item={item} backHref="/market" backLabel="До барахолки" schemaType="Product" />
     );
   }
 

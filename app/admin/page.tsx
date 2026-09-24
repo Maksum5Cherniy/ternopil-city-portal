@@ -112,7 +112,7 @@ export default async function AdminPage() {
     return (
       <AdminAccessDenied
         title="Server-side доступ не налаштований"
-        description="Адмінпанель закрита. Підключіть Neon Postgres Store у Vercel, щоб сервер міг перевіряти session cookie та роль admin."
+        description="Адмінпанель тимчасово недоступна. Спробуйте пізніше."
       />
     );
   }

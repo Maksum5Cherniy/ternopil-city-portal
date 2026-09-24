@@ -5,13 +5,13 @@ import { Heart, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { favoriteStorageKey, favoritesChangeEvent, type SavedFavorite } from "@/lib/favorites";
 
-function readFavorites() {
+function readFavorites(userId: string) {
   if (typeof window === "undefined") {
     return [];
   }
 
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(favoriteStorageKey) || "[]");
+    const parsed = JSON.parse(window.localStorage.getItem(favoriteStorageKey(userId)) || "[]");
 
     return Array.isArray(parsed) ? (parsed as SavedFavorite[]) : [];
   } catch {
@@ -19,16 +19,16 @@ function readFavorites() {
   }
 }
 
-function writeFavorites(items: SavedFavorite[]) {
-  window.localStorage.setItem(favoriteStorageKey, JSON.stringify(items));
+function writeFavorites(userId: string, items: SavedFavorite[]) {
+  window.localStorage.setItem(favoriteStorageKey(userId), JSON.stringify(items));
   window.dispatchEvent(new Event(favoritesChangeEvent));
 }
 
-export default function FavoritesClient() {
+export default function FavoritesClient({ userId }: { userId: string }) {
   const [favorites, setFavorites] = useState<SavedFavorite[]>([]);
 
   useEffect(() => {
-    const sync = () => setFavorites(readFavorites());
+    const sync = () => setFavorites(readFavorites(userId));
 
     sync();
     window.addEventListener("storage", sync);
@@ -38,7 +38,7 @@ export default function FavoritesClient() {
       window.removeEventListener("storage", sync);
       window.removeEventListener(favoritesChangeEvent, sync);
     };
-  }, []);
+  }, [userId]);
 
   if (favorites.length === 0) {
     return (
@@ -62,7 +62,7 @@ export default function FavoritesClient() {
           type="button"
           className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-surface px-3 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary"
           onClick={() => {
-            writeFavorites([]);
+            writeFavorites(userId, []);
             setFavorites([]);
           }}
         >
@@ -88,7 +88,7 @@ export default function FavoritesClient() {
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-muted transition hover:border-primary hover:text-primary"
               onClick={() => {
                 const nextFavorites = favorites.filter((favorite) => favorite.href !== item.href);
-                writeFavorites(nextFavorites);
+                writeFavorites(userId, nextFavorites);
                 setFavorites(nextFavorites);
               }}
             >

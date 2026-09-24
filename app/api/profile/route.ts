@@ -1,3 +1,4 @@
+import { rejectCrossOriginMutation } from "@/lib/request-security";
 import { NextResponse } from "next/server";
 import { getCurrentServerSession } from "@/lib/auth-session";
 import { toPublicUser, updateUserProfile } from "@/lib/database";
@@ -6,6 +7,11 @@ import { profileSchema } from "@/schemas/auth";
 export const runtime = "nodejs";
 
 export async function PUT(request: Request) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   const session = await getCurrentServerSession();
 
   if (session.status !== "authenticated") {

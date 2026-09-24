@@ -47,7 +47,7 @@ export default async function ProfileReviewsPage() {
     return (
       <ReviewsBlockedState
         title="База даних не налаштована"
-        description="Підключіть Neon Store у Vercel, щоб читати власні відгуки."
+        description="Ваші відгуки тимчасово недоступні. Спробуйте пізніше."
       />
     );
   }

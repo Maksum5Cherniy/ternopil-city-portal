@@ -16,15 +16,15 @@ import { Badge } from "@/components/ui/Badge";
 import { LinkButton } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import {
+  getUpcomingEvents,
   latestNews,
-  marketHighlights,
   popularLocations,
   popularPlaces,
-  upcomingEvents,
 } from "@/constants/content";
 import { uk } from "@/config/dictionaries/uk";
 import { SITE } from "@/config/site.config";
 import { getPublishedAdminPortalEntities, mergePortalEntities } from "@/lib/public-content";
+import { getListingCardsFromDatabase } from "@/lib/database";
 import type { HomeCard } from "@/types";
 
 const quickLinks = [
@@ -100,16 +100,19 @@ function CompactCardList({ items }: { items: HomeCard[] }) {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [adminNewsItems, adminPlaceItems, adminHomeItems, adminAdItems] = await Promise.all([
-    getPublishedAdminPortalEntities("news", 6),
-    getPublishedAdminPortalEntities("place", 6),
-    getPublishedAdminPortalEntities("home", 6),
-    getPublishedAdminPortalEntities("ad", 6),
-  ]);
-  const homepageNews = mergePortalEntities(latestNews, adminNewsItems).slice(0, 3);
-  const homepagePlaces = mergePortalEntities(popularPlaces, adminPlaceItems).slice(0, 3);
+  const [adminNewsItems, adminPlaceItems, adminHomeItems, adminAdItems, listings] =
+    await Promise.all([
+      getPublishedAdminPortalEntities("news", 6),
+      getPublishedAdminPortalEntities("place", 6),
+      getPublishedAdminPortalEntities("home", 6),
+      getPublishedAdminPortalEntities("ad", 6),
+      getListingCardsFromDatabase(3).catch(() => []),
+    ]);
+  const homepageNews = mergePortalEntities(adminNewsItems, latestNews).slice(0, 3);
+  const homepagePlaces = mergePortalEntities(adminPlaceItems, popularPlaces).slice(0, 3);
   const homepageBlocks = adminHomeItems.slice(0, 3);
   const homepageAds = adminAdItems.slice(0, 3);
+  const upcomingEvents = getUpcomingEvents().slice(0, 3);
 
   return (
     <>
@@ -190,7 +193,10 @@ export default async function Home() {
       <section className="bg-background py-10 sm:py-14">
         <div className="mx-auto grid w-full max-w-[1180px] gap-8 px-4 sm:px-6 lg:grid-cols-[1.15fr_0.85fr] lg:px-8">
           <div>
-            <SectionHeader title={uk.home.latestNews} href="/news" />
+            <SectionHeader
+              title={adminNewsItems.length ? uk.home.latestNews : "Новини з архіву"}
+              href="/news"
+            />
             <CompactCardList items={homepageNews} />
           </div>
 
@@ -254,8 +260,14 @@ export default async function Home() {
             <CompactCardList items={popularLocations} />
           </div>
           <div>
-            <SectionHeader title={uk.home.upcomingEvents} href="/events" />
-            <CompactCardList items={upcomingEvents} />
+            <SectionHeader title="Найближчі події" href="/events" />
+            {upcomingEvents.length ? (
+              <CompactCardList items={upcomingEvents} />
+            ) : (
+              <p className="rounded-lg border border-dashed border-border bg-surface-subtle p-5 text-sm text-muted">
+                Поки немає підтверджених майбутніх подій. Минулі анонси є в архіві.
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -349,7 +361,7 @@ export default async function Home() {
               </LinkButton>
             </div>
             <div className="mt-6 grid gap-3 md:grid-cols-3">
-              {marketHighlights.map((item) => (
+              {listings.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -360,6 +372,11 @@ export default async function Home() {
                   <p className="mt-2 text-sm leading-6 text-muted">{item.description}</p>
                 </Link>
               ))}
+              {listings.length === 0 ? (
+                <p className="text-sm text-muted md:col-span-3">
+                  Наразі немає опублікованих оголошень.
+                </p>
+              ) : null}
             </div>
           </Card>
         </div>

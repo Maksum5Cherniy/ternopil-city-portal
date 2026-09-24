@@ -37,7 +37,7 @@ export default async function ModerationPage() {
     return (
       <ModerationDenied
         title="База даних не налаштована"
-        description="Підключіть Neon Store у Vercel, щоб працювала черга модерації."
+        description="Черга модерації тимчасово недоступна. Спробуйте пізніше."
       />
     );
   }

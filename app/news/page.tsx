@@ -12,13 +12,17 @@ export const dynamic = "force-dynamic";
 
 export default async function NewsPage() {
   const adminNewsItems = await getPublishedAdminPortalEntities("news");
-  const items = mergePortalEntities(newsItems, adminNewsItems);
+  const items = mergePortalEntities(adminNewsItems, newsItems);
 
   return (
     <ModulePage
       eyebrow="Новини"
-      title="Новини Тернополя"
-      description="Редакційні матеріали, міські оновлення, добірки та популярні публікації про Тернопіль."
+      title={adminNewsItems.length ? "Новини Тернополя" : "Архів новин"}
+      description={
+        adminNewsItems.length
+          ? "Редакційні матеріали та міські оновлення Тернополя."
+          : "Матеріали попередніх місяців. Перевіряйте дату публікації та першоджерело перед використанням інформації."
+      }
       items={items}
     />
   );

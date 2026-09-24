@@ -1,4 +1,10 @@
-import { events, locations, placeCategories, places, type PortalEntity } from "@/constants/content";
+import {
+  getUpcomingEvents,
+  locations,
+  placeCategories,
+  places,
+  type PortalEntity,
+} from "@/constants/content";
 
 export type CityMapPointType = "place" | "location" | "event" | "service";
 
@@ -86,7 +92,7 @@ export function getCityMapPoints() {
       .filter((item) => !placeCategorySlugs.has(item.slug))
       .map((item) => entityToPoint(item, "place")),
     ...locations.map((item) => entityToPoint(item, "location")),
-    ...events.map((item) => entityToPoint(item, "event")),
+    ...getUpcomingEvents().map((item) => entityToPoint(item, "event")),
     ...servicePoints,
   ].filter((item): item is CityMapPoint => Boolean(item));
 }
