@@ -8,10 +8,18 @@ import { getPublishedAdminPortalEntities } from "@/lib/public-content";
 
 export const metadata: Metadata = {
   title: "Пошук",
-  description: "Глобальний пошук по новинах, закладах, локаціях, подіях та оголошеннях.",
+  description:
+    "Глобальний пошук по новинах, закладах, локаціях, подіях та оголошеннях.",
 };
 
-const categories = ["Усі", "Новини", "Заклади", "Локації", "Події", "Барахолка"] as const;
+const categories = [
+  "Усі",
+  "Новини",
+  "Заклади",
+  "Локації",
+  "Події",
+  "Барахолка",
+] as const;
 
 type SearchPageProps = {
   searchParams?: Promise<{
@@ -28,36 +36,54 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     .slice(0, 120)
     .toLowerCase();
   const rawType = Array.isArray(params?.type) ? params.type[0] : params?.type;
-  const selectedType = categories.find((category) => category === rawType) || "Усі";
-  const adminItems = (await getPublishedAdminPortalEntities(undefined, 80)).map((item) => ({
-    ...item,
-    type:
-      item.category === "news"
-        ? "Новини"
-        : item.category === "place"
-          ? "Заклади"
-          : item.category === "ad"
-            ? "Реклама"
-            : "Головна",
-  }));
-  const searchableItems = allSearchItems.filter((item) => item.type !== "Барахолка");
+  const selectedType =
+    categories.find((category) => category === rawType) || "Усі";
+  const adminItems = (await getPublishedAdminPortalEntities(undefined, 80)).map(
+    (item) => ({
+      ...item,
+      type:
+        item.category === "news"
+          ? "Новини"
+          : item.category === "place"
+            ? "Заклади"
+            : item.href.startsWith("/events/")
+              ? "Події"
+              : item.category === "ad"
+                ? "Реклама"
+                : "Головна",
+    }),
+  );
+  const searchableItems = allSearchItems.filter(
+    (item) => item.type !== "Барахолка",
+  );
   const staticResults = query
     ? [...adminItems, ...searchableItems].filter((item) =>
-        `${item.title} ${item.description} ${item.meta || ""}`.toLowerCase().includes(query),
+        `${item.title} ${item.description} ${item.meta || ""}`
+          .toLowerCase()
+          .includes(query),
       )
     : [...adminItems, ...searchableItems];
-  const databaseListingItems = (await searchListingCardsFromDatabase(query).catch(() => [])).map(
-    (item) => ({ ...item, type: "Барахолка" }),
-  );
+  const databaseListingItems = (
+    await searchListingCardsFromDatabase(query).catch(() => [])
+  ).map((item) => ({ ...item, type: "Барахолка" }));
   const allResults = Array.from(
-    new Map([...staticResults, ...databaseListingItems].map((item) => [item.href, item])).values(),
+    new Map(
+      [...staticResults, ...databaseListingItems].map((item) => [
+        item.href,
+        item,
+      ]),
+    ).values(),
   );
   const results =
-    selectedType === "Усі" ? allResults : allResults.filter((item) => item.type === selectedType);
+    selectedType === "Усі"
+      ? allResults
+      : allResults.filter((item) => item.type === selectedType);
 
   return (
     <section className="mx-auto w-full max-w-[920px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-      <h1 className="text-3xl font-semibold tracking-normal sm:text-5xl">{uk.common.search}</h1>
+      <h1 className="text-3xl font-semibold tracking-normal sm:text-5xl">
+        {uk.common.search}
+      </h1>
       <form action="/search" className="mt-6 flex flex-col gap-3 sm:flex-row">
         <label htmlFor="search-page-query" className="sr-only">
           {uk.common.search}
@@ -111,9 +137,13 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             href={item.href}
             className="rounded-lg border border-border bg-surface p-4 transition hover:border-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            <div className="text-xs font-semibold text-primary">{item.type}</div>
+            <div className="text-xs font-semibold text-primary">
+              {item.type}
+            </div>
             <h2 className="mt-1 text-lg font-semibold">{item.title}</h2>
-            <p className="mt-1 text-sm leading-6 text-muted">{item.description}</p>
+            <p className="mt-1 text-sm leading-6 text-muted">
+              {item.description}
+            </p>
           </Link>
         ))}
       </div>
