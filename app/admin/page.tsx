@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import {
   BarChart3,
   Bell,
+  CalendarDays,
   Building2,
   ClipboardCheck,
   FileText,
@@ -50,6 +51,12 @@ const adminSections = [
     icon: FileText,
   },
   {
+    id: "admin-events",
+    title: "Події",
+    description: "Афіша, дати, джерела та архів.",
+    icon: CalendarDays,
+  },
+  {
     id: "admin-places",
     title: "Заклади",
     description: "Каталог, заявки власників, зміни.",
@@ -67,8 +74,18 @@ const adminSections = [
     description: "Розгляд порушень і блокування.",
     icon: Flag,
   },
-  { id: "admin-ads", title: "Реклама", description: "Банери і промо-блоки.", icon: Megaphone },
-  { id: "admin-home", title: "Головна", description: "Порядок секцій і добірки.", icon: Home },
+  {
+    id: "admin-ads",
+    title: "Реклама",
+    description: "Банери і промо-блоки.",
+    icon: Megaphone,
+  },
+  {
+    id: "admin-home",
+    title: "Головна",
+    description: "Порядок секцій і добірки.",
+    icon: Home,
+  },
   {
     id: "admin-notifications",
     title: "Сповіщення",
@@ -89,13 +106,23 @@ const adminSections = [
   },
 ];
 
-function AdminAccessDenied({ title, description }: { title: string; description: string }) {
+function AdminAccessDenied({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   return (
     <section className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
       <div className="rounded-lg border border-accent/40 bg-accent-soft p-6">
         <Badge variant="warning">403</Badge>
-        <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-5xl">{title}</h1>
-        <p className="mt-4 max-w-3xl text-base leading-8 text-muted">{description}</p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-5xl">
+          {title}
+        </h1>
+        <p className="mt-4 max-w-3xl text-base leading-8 text-muted">
+          {description}
+        </p>
       </div>
     </section>
   );
@@ -142,7 +169,10 @@ export default async function AdminPage() {
     { label: "Заявки власників", value: String(dashboard.stats.ownerClaims) },
     { label: "Скарги", value: String(dashboard.stats.pendingReports) },
     { label: "Відгуки", value: String(dashboard.stats.pendingReviews) },
-    { label: "Активні оголошення", value: String(dashboard.stats.activeListings) },
+    {
+      label: "Активні оголошення",
+      value: String(dashboard.stats.activeListings),
+    },
     { label: "Заблоковані", value: String(dashboard.stats.blockedUsers) },
     { label: "Контент", value: String(dashboard.stats.contentItems) },
     { label: "Сповіщення", value: String(dashboard.stats.sentNotifications) },
@@ -159,18 +189,22 @@ export default async function AdminPage() {
           <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-5xl">
             {uk.admin.title}
           </h1>
-          <p className="mt-4 max-w-3xl text-base leading-8 text-muted">{uk.admin.description}</p>
+          <p className="mt-4 max-w-3xl text-base leading-8 text-muted">
+            {uk.admin.description}
+          </p>
         </div>
         <div className="rounded-lg border border-accent/40 bg-accent-soft p-4 text-sm leading-6 text-accent-strong lg:max-w-sm">
-          Доступ підтверджено server-side: session cookie перевірено через Postgres, роль admin
-          прочитано з таблиці users.
+          Доступ підтверджено server-side: session cookie перевірено через
+          Postgres, роль admin прочитано з таблиці users.
         </div>
       </div>
 
       <div className="mt-6 grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <div key={stat.label} className="bg-surface p-5">
-            <div className="text-2xl font-semibold text-primary">{stat.value}</div>
+            <div className="text-2xl font-semibold text-primary">
+              {stat.value}
+            </div>
             <div className="mt-1 text-sm text-muted">{stat.label}</div>
           </div>
         ))}
@@ -192,10 +226,14 @@ export default async function AdminPage() {
                 </span>
                 <div>
                   <h2 className="font-semibold">{section.title}</h2>
-                  <p className="mt-1 text-sm leading-6 text-muted">{section.description}</p>
+                  <p className="mt-1 text-sm leading-6 text-muted">
+                    {section.description}
+                  </p>
                 </div>
               </div>
-              <span className="mt-4 text-sm font-semibold text-primary">Відкрити розділ</span>
+              <span className="mt-4 text-sm font-semibold text-primary">
+                Відкрити розділ
+              </span>
             </a>
           );
         })}
