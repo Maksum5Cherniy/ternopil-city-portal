@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CheckCircle2, CircleSlash, EyeOff, Star } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
@@ -9,13 +8,14 @@ import type { getModerationDashboard } from "@/lib/database-core";
 type ModerationData = Awaited<ReturnType<typeof getModerationDashboard>>;
 
 async function readError(response: Response, fallback: string) {
-  const body = (await response.json().catch(() => null)) as { error?: string } | null;
+  const body = (await response.json().catch(() => null)) as {
+    error?: string;
+  } | null;
 
   return body?.error || fallback;
 }
 
 export default function ModerationConsole({ data }: { data: ModerationData }) {
-  const router = useRouter();
   const [message, setMessage] = useState("");
 
   const moderateListing = async (
@@ -36,10 +36,13 @@ export default function ModerationConsole({ data }: { data: ModerationData }) {
     }
 
     setMessage("Оголошення оновлено.");
-    router.refresh();
+    window.location.reload();
   };
 
-  const moderateClaim = async (claimId: string, status: "approved" | "rejected") => {
+  const moderateClaim = async (
+    claimId: string,
+    status: "approved" | "rejected",
+  ) => {
     setMessage("");
 
     const response = await fetch("/api/admin/owner-claims", {
@@ -54,10 +57,13 @@ export default function ModerationConsole({ data }: { data: ModerationData }) {
     }
 
     setMessage("Заявку оновлено.");
-    router.refresh();
+    window.location.reload();
   };
 
-  const moderateReport = async (reportId: string, status: "reviewed" | "dismissed" | "blocked") => {
+  const moderateReport = async (
+    reportId: string,
+    status: "reviewed" | "dismissed" | "blocked",
+  ) => {
     setMessage("");
 
     const response = await fetch("/api/admin/reports", {
@@ -72,7 +78,7 @@ export default function ModerationConsole({ data }: { data: ModerationData }) {
     }
 
     setMessage("Скаргу оновлено.");
-    router.refresh();
+    window.location.reload();
   };
 
   const moderateReview = async (
@@ -93,7 +99,7 @@ export default function ModerationConsole({ data }: { data: ModerationData }) {
     }
 
     setMessage("Відгук оновлено.");
-    router.refresh();
+    window.location.reload();
   };
 
   return (
@@ -110,10 +116,15 @@ export default function ModerationConsole({ data }: { data: ModerationData }) {
         </div>
         {data.listings.length > 0 ? (
           data.listings.map((item) => (
-            <div key={item.id} className="border-b border-border p-4 last:border-b-0">
+            <div
+              key={item.id}
+              className="border-b border-border p-4 last:border-b-0"
+            >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <div className="text-xs font-semibold text-primary">Оголошення</div>
+                  <div className="text-xs font-semibold text-primary">
+                    Оголошення
+                  </div>
                   <h3 className="mt-1 font-semibold">{item.title}</h3>
                   <p className="mt-1 text-sm text-muted">
                     {item.authorName} · {item.authorEmail}
@@ -160,7 +171,10 @@ export default function ModerationConsole({ data }: { data: ModerationData }) {
         </div>
         {data.reviews.length > 0 ? (
           data.reviews.map((review) => (
-            <div key={review.id} className="border-b border-border p-4 last:border-b-0">
+            <div
+              key={review.id}
+              className="border-b border-border p-4 last:border-b-0"
+            >
               <div className="flex flex-wrap items-center gap-2">
                 <Star aria-hidden size={17} className="text-accent-strong" />
                 <h3 className="font-semibold">{review.targetTitle}</h3>
@@ -168,7 +182,8 @@ export default function ModerationConsole({ data }: { data: ModerationData }) {
                 <Badge>{review.rating} / 5</Badge>
               </div>
               <p className="mt-1 text-sm text-muted">
-                {review.userName || "Користувач"} · {review.userEmail || "email приховано"}
+                {review.userName || "Користувач"} ·{" "}
+                {review.userEmail || "email приховано"}
               </p>
               <p className="mt-2 text-sm leading-6 text-muted">{review.text}</p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -208,16 +223,23 @@ export default function ModerationConsole({ data }: { data: ModerationData }) {
         </div>
         {data.reports.length > 0 ? (
           data.reports.map((report) => (
-            <div key={report.id} className="border-b border-border p-4 last:border-b-0">
+            <div
+              key={report.id}
+              className="border-b border-border p-4 last:border-b-0"
+            >
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-semibold">{report.entityTitle || report.entityId}</h3>
+                <h3 className="font-semibold">
+                  {report.entityTitle || report.entityId}
+                </h3>
                 <Badge variant="warning">{report.status}</Badge>
               </div>
               <p className="mt-1 text-xs font-semibold text-primary">
                 {report.entityType}
                 {report.reporterEmail ? ` · ${report.reporterEmail}` : ""}
               </p>
-              <p className="mt-2 text-sm leading-6 text-muted">{report.reason}</p>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {report.reason}
+              </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -254,9 +276,14 @@ export default function ModerationConsole({ data }: { data: ModerationData }) {
         </div>
         {data.ownerClaims.length > 0 ? (
           data.ownerClaims.map((claim) => (
-            <div key={claim.id} className="border-b border-border p-4 last:border-b-0">
+            <div
+              key={claim.id}
+              className="border-b border-border p-4 last:border-b-0"
+            >
               <h3 className="font-semibold">{claim.placeName}</h3>
-              <p className="mt-1 text-sm text-muted">{claim.phone || claim.businessEmail}</p>
+              <p className="mt-1 text-sm text-muted">
+                {claim.phone || claim.businessEmail}
+              </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
