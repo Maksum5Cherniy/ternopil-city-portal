@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { loginSchema, type LoginInput } from "@/schemas/auth";
@@ -10,13 +9,18 @@ import { uk } from "@/config/dictionaries/uk";
 type LoginFormValues = LoginInput;
 
 async function readError(response: Response, fallback: string) {
-  const body = (await response.json().catch(() => null)) as { error?: string } | null;
+  const body = (await response.json().catch(() => null)) as {
+    error?: string;
+  } | null;
 
   return body?.error || fallback;
 }
 
-export default function LoginForm({ redirectTo = "/profile" }: { redirectTo?: string }) {
-  const router = useRouter();
+export default function LoginForm({
+  redirectTo = "/profile",
+}: {
+  redirectTo?: string;
+}) {
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const {
@@ -42,7 +46,9 @@ export default function LoginForm({ redirectTo = "/profile" }: { redirectTo?: st
         const fieldName = issue.path[0];
 
         if (typeof fieldName === "string") {
-          setError(fieldName as keyof LoginFormValues, { message: issue.message });
+          setError(fieldName as keyof LoginFormValues, {
+            message: issue.message,
+          });
         }
       });
 
@@ -63,8 +69,7 @@ export default function LoginForm({ redirectTo = "/profile" }: { redirectTo?: st
       const body = (await response.json()) as { message?: string };
 
       setMessage(body.message || uk.auth.loginSuccess);
-      router.push(redirectTo);
-      router.refresh();
+      window.location.assign(redirectTo);
     } catch (error) {
       setIsError(true);
       setMessage(error instanceof Error ? error.message : "Не вдалося увійти.");
@@ -85,7 +90,9 @@ export default function LoginForm({ redirectTo = "/profile" }: { redirectTo?: st
           {...register("email")}
         />
         {errors.email ? (
-          <p className="mt-1 text-sm text-accent-strong">{errors.email.message}</p>
+          <p className="mt-1 text-sm text-accent-strong">
+            {errors.email.message}
+          </p>
         ) : null}
       </div>
 
@@ -101,7 +108,9 @@ export default function LoginForm({ redirectTo = "/profile" }: { redirectTo?: st
           {...register("password")}
         />
         {errors.password ? (
-          <p className="mt-1 text-sm text-accent-strong">{errors.password.message}</p>
+          <p className="mt-1 text-sm text-accent-strong">
+            {errors.password.message}
+          </p>
         ) : null}
       </div>
 
@@ -134,7 +143,10 @@ export default function LoginForm({ redirectTo = "/profile" }: { redirectTo?: st
       </p>
       <p className="text-sm text-muted">
         Забули пароль?{" "}
-        <Link href="/forgot-password" className="font-semibold text-primary underline">
+        <Link
+          href="/forgot-password"
+          className="font-semibold text-primary underline"
+        >
           Відновити доступ
         </Link>
       </p>
