@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getCityDate, getUpcomingEvents } from "../constants/content";
+import { events, getCityDate, getUpcomingEvents } from "../constants/content";
+import { filterEvents } from "../lib/event-filters";
 import { adminContentUpsertSchema } from "../schemas/admin";
 
 const baseEvent = {
@@ -27,6 +28,27 @@ test("a multi-day event stays upcoming through its last day", () => {
 
 test("event dates use the city's local day around midnight", () => {
   assert.equal(getCityDate(new Date("2026-09-24T22:30:00Z")), "2026-09-25");
+});
+
+test("event filters include each day of a multi-day event", () => {
+  const options = {
+    query: "",
+    category: "children",
+    onDate: "2026-09-27",
+    freeOnly: true,
+  };
+  assert.deepEqual(
+    filterEvents(events, options).map((item) => item.slug),
+    ["juniors-games-ternopil-2026"],
+  );
+  assert.equal(
+    filterEvents(events, { ...options, onDate: "2026-09-28" }).length,
+    0,
+  );
+  assert.equal(
+    filterEvents(events, { ...options, category: "concerts" }).length,
+    0,
+  );
 });
 
 test("published events require a valid date and HTTPS source", () => {
