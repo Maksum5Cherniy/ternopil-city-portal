@@ -21,7 +21,7 @@ administrator addresses as secrets:
 | `RESEND_EMAIL_DOMAIN` | `deternopil.pp.ua`. |
 | `NEXT_PUBLIC_SITE_URL` | Canonical HTTPS URL, used in email links and metadata. |
 | `NEXT_PUBLIC_SITE_DOMAIN_LABEL` | Public domain shown in the interface. |
-| `DATABASE_SCHEMA_MODE` | Set to `external` only after provisioning the complete schema and granting a dedicated runtime role its required table privileges. |
+| `DATABASE_SCHEMA_MODE` | Set to `external` after provisioning the complete schema, so normal requests do not execute DDL. |
 
 Do not put connection strings, API keys, or administrator email addresses in
 Git, `.openai/hosting.json`, or client-side variables.
@@ -54,11 +54,14 @@ and TLS validation finish, set
 `lib/database-core.ts` can bootstrap an empty local database when
 `DATABASE_SCHEMA_MODE` is unset. For production, apply schema migrations with
 the database owner using a direct connection. Once all tables, indexes, and
-`auth_rate_limits` exist, use a separate Postgres login with only the table
-permissions the application requires. Then set `DATABASE_SCHEMA_MODE=external`
-and replace the server-only `DATABASE_URL` with that login's connection string.
-Keep the owner credential outside the request-serving environment. Review and
-apply grants explicitly when changing the schema; do not give the runtime
+`auth_rate_limits` exist, set `DATABASE_SCHEMA_MODE=external`. The current
+deployment still uses the database owner login for queries. The proposed next
+step is a separate Postgres login with only the table permissions the
+application requires; a reviewable, unapplied grant script is in
+`docs/runtime-grants.sql`. After approving and applying those grants, replace
+the server-only `DATABASE_URL` with the dedicated login's connection string.
+Keep the owner credential outside the request-serving environment after that
+switch. Review permissions when changing the schema; do not give the runtime
 role schema ownership or blanket privileges on future tables.
 
 ## Release checks
