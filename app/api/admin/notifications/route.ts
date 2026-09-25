@@ -1,3 +1,4 @@
+import { rejectCrossOriginMutation } from "@/lib/request-security";
 import { NextResponse } from "next/server";
 import { getCurrentServerSession, hasServerRole } from "@/lib/auth-session";
 import { createSystemNotification, deleteAdminNotification } from "@/lib/database";
@@ -6,6 +7,11 @@ import { adminNotificationDeleteSchema, systemNotificationSchema } from "@/schem
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   const session = await getCurrentServerSession();
 
   if (session.status !== "authenticated" || !hasServerRole(session, "admin")) {
@@ -43,6 +49,11 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   const session = await getCurrentServerSession();
 
   if (session.status !== "authenticated" || !hasServerRole(session, "admin")) {

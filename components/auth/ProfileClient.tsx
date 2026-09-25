@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
@@ -44,21 +43,24 @@ type ProfileAction = {
 const primaryProfileActions: ProfileAction[] = [
   {
     title: "Продати на барахолці",
-    description: "Створити оголошення, пройти модерацію та керувати статусом товару.",
+    description:
+      "Створити оголошення, пройти модерацію та керувати статусом товару.",
     icon: PackageCheck,
     href: "/market/new",
     action: "Створити оголошення",
   },
   {
     title: "Мої оголошення",
-    description: "Статуси модерації, причина відхилення, архів, продаж і повторна подача.",
+    description:
+      "Статуси модерації, причина відхилення, архів, продаж і повторна подача.",
     icon: ListChecks,
     href: "/profile/listings",
     action: "Керувати",
   },
   {
     title: "Заявка власника",
-    description: "Подати заявку на керування закладом або переглянути її статус.",
+    description:
+      "Подати заявку на керування закладом або переглянути її статус.",
     icon: Store,
     href: "/owner",
     action: "Подати заявку",
@@ -107,8 +109,12 @@ function ProfileActionCard({ item }: { item: ProfileAction }) {
       <span className="grid h-11 w-11 place-items-center rounded-md bg-primary-soft text-primary transition group-hover:bg-surface">
         <Icon aria-hidden size={22} />
       </span>
-      <h3 className="mt-4 font-semibold group-hover:text-primary">{item.title}</h3>
-      <p className="mt-2 flex-1 text-sm leading-6 text-muted">{item.description}</p>
+      <h3 className="mt-4 font-semibold group-hover:text-primary">
+        {item.title}
+      </h3>
+      <p className="mt-2 flex-1 text-sm leading-6 text-muted">
+        {item.description}
+      </p>
       <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
         {item.action}
         <ArrowRight aria-hidden size={16} />
@@ -118,13 +124,14 @@ function ProfileActionCard({ item }: { item: ProfileAction }) {
 }
 
 async function readError(response: Response, fallback: string) {
-  const body = (await response.json().catch(() => null)) as { error?: string } | null;
+  const body = (await response.json().catch(() => null)) as {
+    error?: string;
+  } | null;
 
   return body?.error || fallback;
 }
 
 export default function ProfileClient() {
-  const router = useRouter();
   const [user, setUser] = useState<ProfileUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -189,7 +196,9 @@ export default function ProfileClient() {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося оновити профіль."));
+        throw new Error(
+          await readError(response, "Не вдалося оновити профіль."),
+        );
       }
 
       const body = (await response.json()) as { user: ProfileUser };
@@ -197,7 +206,9 @@ export default function ProfileClient() {
       setUser(body.user);
       setMessage("Профіль оновлено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося оновити профіль.");
+      setMessage(
+        error instanceof Error ? error.message : "Не вдалося оновити профіль.",
+      );
     } finally {
       setSaving(false);
     }
@@ -208,17 +219,23 @@ export default function ProfileClient() {
     setResending(true);
 
     try {
-      const response = await fetch("/api/auth/resend-verification", { method: "POST" });
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+      });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося відправити лист."));
+        throw new Error(
+          await readError(response, "Не вдалося відправити лист."),
+        );
       }
 
       const body = (await response.json()) as { message?: string };
 
       setMessage(body.message || "Лист підтвердження відправлено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося відправити лист.");
+      setMessage(
+        error instanceof Error ? error.message : "Не вдалося відправити лист.",
+      );
     } finally {
       setResending(false);
     }
@@ -241,7 +258,9 @@ export default function ProfileClient() {
           </span>
           <div>
             <h2 className="text-xl font-semibold">Потрібен вхід</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">{uk.profile.signedOut}</p>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              {uk.profile.signedOut}
+            </p>
           </div>
         </div>
         <div className="mt-5 flex flex-wrap gap-2">
@@ -284,10 +303,13 @@ export default function ProfileClient() {
                     : "border-accent/40 bg-accent-soft text-accent-strong"
                 }`}
               >
-                {user.emailVerified ? "Email підтверджено" : "Email не підтверджено"}
+                {user.emailVerified
+                  ? "Email підтверджено"
+                  : "Email не підтверджено"}
               </span>
               <span className="rounded-md border border-border bg-surface-subtle px-2 py-1 text-muted">
-                Продавець: {user.sellerStatus === "active" ? "активний" : "призупинено"}
+                Продавець:{" "}
+                {user.sellerStatus === "active" ? "активний" : "призупинено"}
               </span>
             </div>
           </div>
@@ -295,7 +317,8 @@ export default function ProfileClient() {
 
         {!user.emailVerified ? (
           <div className="mt-5 rounded-md border border-accent/40 bg-accent-soft p-4 text-sm leading-6 text-accent-strong">
-            Підтвердіть email, щоб створювати оголошення і подавати заявки власника закладу.
+            Підтвердіть email, щоб створювати оголошення і подавати заявки
+            власника закладу.
             <button
               type="button"
               onClick={resendVerification}
@@ -380,7 +403,7 @@ export default function ProfileClient() {
             onClick={async () => {
               await fetch("/api/auth/session", { method: "DELETE" });
               setUser(null);
-              router.refresh();
+              window.location.reload();
             }}
           >
             {uk.common.logout}
@@ -396,7 +419,8 @@ export default function ProfileClient() {
           <ProfileActionCard
             item={{
               title: "Модерація",
-              description: "Черга оголошень, заявок власників, відгуків, скарг і журнал дій.",
+              description:
+                "Черга оголошень, заявок власників, відгуків, скарг і журнал дій.",
               icon: Bell,
               href: "/moderation",
               action: "Відкрити чергу",
@@ -407,7 +431,8 @@ export default function ProfileClient() {
           <ProfileActionCard
             item={{
               title: "Адмінпанель",
-              description: "Користувачі, ролі, блокування, модерація і системний журнал.",
+              description:
+                "Користувачі, ролі, блокування, модерація і системний журнал.",
               icon: Settings,
               href: "/admin",
               action: "Керувати",

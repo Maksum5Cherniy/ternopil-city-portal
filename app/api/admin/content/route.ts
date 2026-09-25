@@ -1,3 +1,4 @@
+import { rejectCrossOriginMutation } from "@/lib/request-security";
 import { NextResponse } from "next/server";
 import { getCurrentServerSession, hasServerRole } from "@/lib/auth-session";
 import {
@@ -30,6 +31,11 @@ async function requireAdmin() {
 }
 
 export async function POST(request: Request) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   const { session, response } = await requireAdmin();
 
   if (response) {
@@ -59,6 +65,11 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   const { session, response } = await requireAdmin();
 
   if (response) {
@@ -93,6 +104,11 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   const { session, response } = await requireAdmin();
 
   if (response) {

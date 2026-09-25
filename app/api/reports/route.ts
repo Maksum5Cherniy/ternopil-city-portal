@@ -1,3 +1,4 @@
+import { rejectCrossOriginMutation } from "@/lib/request-security";
 import { NextResponse } from "next/server";
 import { getCurrentServerSession } from "@/lib/auth-session";
 import { createReport, isDatabaseConfigured } from "@/lib/database";
@@ -6,9 +7,14 @@ import { reportCreateSchema } from "@/schemas/report";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   if (!isDatabaseConfigured()) {
     return NextResponse.json(
-      { error: "База даних ще не налаштована. Підключіть Neon Store у Vercel." },
+      { error: "Сервіс акаунтів тимчасово недоступний. Спробуйте пізніше." },
       { status: 503 },
     );
   }

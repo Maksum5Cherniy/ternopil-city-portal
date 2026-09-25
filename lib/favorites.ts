@@ -1,4 +1,6 @@
-export const favoriteStorageKey = "deternopil:favorites";
+export function favoriteStorageKey(userId: string) {
+  return `deternopil:favorites:${userId}`;
+}
 export const favoritesChangeEvent = "deternopil-favorites-change";
 
 export type SavedFavorite = {

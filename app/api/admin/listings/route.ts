@@ -1,3 +1,4 @@
+import { rejectCrossOriginMutation } from "@/lib/request-security";
 import { NextResponse } from "next/server";
 import { getCurrentServerSession, hasServerRole } from "@/lib/auth-session";
 import { moderateListing } from "@/lib/database";
@@ -6,6 +7,11 @@ import { listingModerationSchema } from "@/schemas/admin";
 export const runtime = "nodejs";
 
 export async function PATCH(request: Request) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   const session = await getCurrentServerSession();
 
   if (session.status !== "authenticated" || !hasServerRole(session, "moderator")) {

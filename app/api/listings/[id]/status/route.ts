@@ -1,3 +1,4 @@
+import { rejectCrossOriginMutation } from "@/lib/request-security";
 import { NextResponse } from "next/server";
 import { getCurrentServerSession } from "@/lib/auth-session";
 import { updateOwnListingStatus } from "@/lib/database";
@@ -10,6 +11,11 @@ type RouteContext = {
 };
 
 export async function PATCH(request: Request, { params }: RouteContext) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   const session = await getCurrentServerSession();
 
   if (session.status !== "authenticated") {

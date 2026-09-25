@@ -16,15 +16,20 @@ import { Badge } from "@/components/ui/Badge";
 import { LinkButton } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import {
+  events,
+  getCityDate,
+  isUpcomingEvent,
   latestNews,
-  marketHighlights,
   popularLocations,
   popularPlaces,
-  upcomingEvents,
 } from "@/constants/content";
 import { uk } from "@/config/dictionaries/uk";
 import { SITE } from "@/config/site.config";
-import { getPublishedAdminPortalEntities, mergePortalEntities } from "@/lib/public-content";
+import {
+  getPublishedAdminPortalEntities,
+  mergePortalEntities,
+} from "@/lib/public-content";
+import { getListingCardsFromDatabase } from "@/lib/database";
 import type { HomeCard } from "@/types";
 
 const quickLinks = [
@@ -51,7 +56,9 @@ const jsonLd = {
 function SectionHeader({ title, href }: { title: string; href: string }) {
   return (
     <div className="mb-4 flex items-center justify-between gap-3">
-      <h2 className="text-xl font-semibold tracking-normal sm:text-2xl">{title}</h2>
+      <h2 className="text-xl font-semibold tracking-normal sm:text-2xl">
+        {title}
+      </h2>
       <Link
         href={href}
         className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary-strong"
@@ -75,15 +82,21 @@ function CompactCardList({ items }: { items: HomeCard[] }) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                {item.badge ? <Badge variant="accent">{item.badge}</Badge> : null}
+                {item.badge ? (
+                  <Badge variant="accent">{item.badge}</Badge>
+                ) : null}
                 {item.meta ? (
-                  <span className="text-xs font-semibold text-muted">{item.meta}</span>
+                  <span className="text-xs font-semibold text-muted">
+                    {item.meta}
+                  </span>
                 ) : null}
               </div>
               <h3 className="mt-2 text-base font-semibold text-foreground group-hover:text-primary">
                 {item.title}
               </h3>
-              <p className="mt-1 text-sm leading-6 text-muted">{item.description}</p>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                {item.description}
+              </p>
             </div>
             <ArrowRight
               aria-hidden
@@ -100,16 +113,35 @@ function CompactCardList({ items }: { items: HomeCard[] }) {
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [adminNewsItems, adminPlaceItems, adminHomeItems, adminAdItems] = await Promise.all([
+  const [
+    adminNewsItems,
+    adminPlaceItems,
+    adminEventItems,
+    adminHomeItems,
+    adminAdItems,
+    listings,
+  ] = await Promise.all([
     getPublishedAdminPortalEntities("news", 6),
     getPublishedAdminPortalEntities("place", 6),
+    getPublishedAdminPortalEntities("event", 12),
     getPublishedAdminPortalEntities("home", 6),
     getPublishedAdminPortalEntities("ad", 6),
+    getListingCardsFromDatabase(3).catch(() => []),
   ]);
-  const homepageNews = mergePortalEntities(latestNews, adminNewsItems).slice(0, 3);
-  const homepagePlaces = mergePortalEntities(popularPlaces, adminPlaceItems).slice(0, 3);
+  const homepageNews = mergePortalEntities(adminNewsItems, latestNews).slice(
+    0,
+    3,
+  );
+  const homepagePlaces = mergePortalEntities(
+    adminPlaceItems,
+    popularPlaces,
+  ).slice(0, 3);
   const homepageBlocks = adminHomeItems.slice(0, 3);
   const homepageAds = adminAdItems.slice(0, 3);
+  const today = getCityDate();
+  const upcomingEvents = mergePortalEntities(adminEventItems, events)
+    .filter((item) => isUpcomingEvent(item, today))
+    .slice(0, 3);
 
   return (
     <>
@@ -129,9 +161,12 @@ export default async function Home() {
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(13_27_61/0.94),rgb(13_27_61/0.74)_46%,rgb(13_27_61/0.16))]" />
         <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgb(13_27_61/0.32))]" />
-        <div className="relative mx-auto grid min-h-[600px] w-full max-w-[1180px] content-end px-4 py-10 sm:px-6 lg:px-8">
+        <div className="relative mx-auto grid min-h-[500px] w-full max-w-[1180px] content-end px-4 py-10 sm:min-h-[530px] sm:px-6 lg:px-8">
           <div className="max-w-3xl pb-4 text-white">
-            <Badge variant="warning" className="border-accent bg-accent text-[#0D1B3D]">
+            <Badge
+              variant="warning"
+              className="border-accent bg-accent text-[#0D1B3D]"
+            >
               {uk.home.eyebrow}
             </Badge>
             <h1 className="mt-5 max-w-2xl text-4xl font-semibold tracking-normal sm:text-5xl lg:text-6xl">
@@ -149,7 +184,11 @@ export default async function Home() {
                 {uk.common.search}
               </label>
               <div className="flex min-h-12 flex-1 items-center gap-2 rounded-md bg-white px-3 text-[#0D1B3D]">
-                <Search aria-hidden size={18} className="shrink-0 text-[#000000]" />
+                <Search
+                  aria-hidden
+                  size={18}
+                  className="shrink-0 text-[#000000]"
+                />
                 <input
                   id="home-search"
                   name="q"
@@ -201,17 +240,40 @@ export default async function Home() {
               </span>
               <div>
                 <h2 className="text-xl font-semibold">{uk.home.cityMap}</h2>
-                <p className="text-sm text-muted">Заклади, події, сервіси і корисні точки.</p>
+                <p className="text-sm text-muted">
+                  Заклади, прогулянкові місця та підтверджені події.
+                </p>
               </div>
             </div>
-            <div className="mt-5 overflow-hidden rounded-lg border border-border bg-surface">
-              <div className="relative h-64 bg-[linear-gradient(90deg,var(--surface-subtle)_1px,transparent_1px),linear-gradient(var(--surface-subtle)_1px,transparent_1px)] bg-[size:34px_34px]">
-                <div className="absolute left-[18%] top-[24%] h-3 w-3 rounded-md bg-accent ring-4 ring-accent-soft" />
-                <div className="absolute left-[44%] top-[50%] h-3 w-3 rounded-md bg-info ring-4 ring-info-soft" />
-                <div className="absolute left-[70%] top-[35%] h-3 w-3 rounded-md bg-success ring-4 ring-success-soft" />
-                <div className="absolute bottom-5 left-5 rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-muted shadow-[var(--shadow)]">
-                  49.5535, 25.5948
-                </div>
+            <div className="mt-5 overflow-hidden rounded-lg border border-border bg-[radial-gradient(circle_at_85%_15%,var(--info-soft),transparent_55%)] p-4 dark:bg-surface">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-primary">
+                Почніть із міста
+              </p>
+              <div className="grid gap-2">
+                {popularLocations.map((place, index) => (
+                  <Link
+                    key={place.href}
+                    href={place.href}
+                    className="group flex items-center gap-3 rounded-md border border-border bg-surface/90 px-3 py-3 transition hover:border-primary hover:shadow-[var(--shadow)]"
+                  >
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-primary-soft text-sm font-bold text-primary">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold group-hover:text-primary">
+                        {place.title}
+                      </span>
+                      <span className="block truncate text-xs text-muted">
+                        {place.description}
+                      </span>
+                    </span>
+                    <ArrowRight
+                      aria-hidden
+                      size={17}
+                      className="shrink-0 text-muted group-hover:text-primary"
+                    />
+                  </Link>
+                ))}
               </div>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
@@ -254,8 +316,15 @@ export default async function Home() {
             <CompactCardList items={popularLocations} />
           </div>
           <div>
-            <SectionHeader title={uk.home.upcomingEvents} href="/events" />
-            <CompactCardList items={upcomingEvents} />
+            <SectionHeader title="Найближчі події" href="/events" />
+            {upcomingEvents.length ? (
+              <CompactCardList items={upcomingEvents} />
+            ) : (
+              <p className="rounded-lg border border-dashed border-border bg-surface-subtle p-5 text-sm text-muted">
+                Поки немає підтверджених майбутніх подій. Минулі анонси є в
+                архіві.
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -269,10 +338,12 @@ export default async function Home() {
               </span>
               <div>
                 <Badge variant="warning">Реклама</Badge>
-                <h2 className="mt-3 text-2xl font-semibold">Реклама на Де Тернопіль</h2>
+                <h2 className="mt-3 text-2xl font-semibold">
+                  Реклама на Де Тернопіль
+                </h2>
                 <p className="mt-3 text-sm leading-6 text-muted">
-                  Розміщення закладів, банерів, промо-блоків, подій і локальних пропозицій для
-                  аудиторії Тернополя.
+                  Розміщення закладів, банерів, промо-блоків, подій і локальних
+                  пропозицій для аудиторії Тернополя.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {["Головна", "Заклади", "Барахолка", "Події"].map((label) => (
@@ -298,8 +369,8 @@ export default async function Home() {
             ) : (
               <div className="rounded-lg border border-dashed border-border bg-surface-subtle p-6">
                 <p className="text-sm leading-6 text-muted">
-                  Місце для актуальних рекламних пропозицій, партнерських анонсів і промо-матеріалів
-                  після публікації з адмінпанелі.
+                  Місце для актуальних рекламних пропозицій, партнерських
+                  анонсів і промо-матеріалів після публікації з адмінпанелі.
                 </p>
               </div>
             )}
@@ -315,14 +386,16 @@ export default async function Home() {
                 <Store aria-hidden size={22} />
               </span>
               <div>
-                <h2 className="text-xl font-semibold">{uk.home.businessBlock.title}</h2>
+                <h2 className="text-xl font-semibold">
+                  {uk.home.businessBlock.title}
+                </h2>
                 <p className="mt-2 text-sm leading-6 text-muted">
                   {uk.home.businessBlock.description}
                 </p>
               </div>
             </div>
             <LinkButton
-              href="/places"
+              href="/owner"
               variant="primary"
               className="mt-5"
               rightIcon={<ArrowRight aria-hidden size={17} />}
@@ -338,28 +411,43 @@ export default async function Home() {
                   <span className="grid h-11 w-11 place-items-center rounded-md bg-accent-soft text-accent-strong">
                     <Megaphone aria-hidden size={22} />
                   </span>
-                  <h2 className="text-xl font-semibold">{uk.home.marketHighlights}</h2>
+                  <h2 className="text-xl font-semibold">
+                    {uk.home.marketHighlights}
+                  </h2>
                 </div>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-muted">
                   {uk.home.listingBlock.description}
                 </p>
               </div>
-              <LinkButton href="/market" variant="accent" leftIcon={<Plus aria-hidden size={18} />}>
+              <LinkButton
+                href="/market"
+                variant="accent"
+                leftIcon={<Plus aria-hidden size={18} />}
+              >
                 {uk.common.addListing}
               </LinkButton>
             </div>
             <div className="mt-6 grid gap-3 md:grid-cols-3">
-              {marketHighlights.map((item) => (
+              {listings.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   className="rounded-lg border border-border bg-surface-subtle p-4 transition hover:border-info focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
                 >
-                  <div className="text-xs font-semibold text-info">{item.meta}</div>
+                  <div className="text-xs font-semibold text-info">
+                    {item.meta}
+                  </div>
                   <h3 className="mt-2 text-base font-semibold">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted">{item.description}</p>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    {item.description}
+                  </p>
                 </Link>
               ))}
+              {listings.length === 0 ? (
+                <p className="text-sm text-muted md:col-span-3">
+                  Наразі немає опублікованих оголошень.
+                </p>
+              ) : null}
             </div>
           </Card>
         </div>

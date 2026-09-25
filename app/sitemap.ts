@@ -3,7 +3,6 @@ import { SITE } from "@/config/site.config";
 import {
   events,
   listingCategories,
-  listings,
   locations,
   newsItems,
   placeCategories,
@@ -32,7 +31,6 @@ const dynamicRoutes = [
   ...placeCategories.map((item) => `/places/${item.slug}`),
   ...locations.map((item) => item.href),
   ...events.map((item) => item.href),
-  ...listings.filter((item) => item.status === "active").map((item) => item.href),
   ...listingCategories.map((item) => `/market/${item.slug}`),
 ];
 

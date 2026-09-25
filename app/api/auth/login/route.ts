@@ -1,5 +1,7 @@
+import { rejectCrossOriginMutation } from "@/lib/request-security";
 import { NextResponse } from "next/server";
 import { createServerSession, setSessionCookie } from "@/lib/auth-session";
+import { enforceAuthLimit, getClientAddress } from "@/lib/auth-rate-limit";
 import {
   getUserByEmail,
   isDatabaseConfigured,
@@ -13,9 +15,14 @@ import { loginSchema } from "@/schemas/auth";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   if (!isDatabaseConfigured()) {
     return NextResponse.json(
-      { error: "База даних ще не налаштована. Підключіть Neon Store у Vercel." },
+      { error: "Сервіс акаунтів тимчасово недоступний. Спробуйте пізніше." },
       { status: 503 },
     );
   }
@@ -32,6 +39,22 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
+  }
+
+  const accountLimit = await enforceAuthLimit("login-account", parsed.data.email, 12, 15 * 60);
+
+  if (accountLimit) {
+    return accountLimit;
+  }
+
+  const clientAddress = getClientAddress(request);
+
+  if (clientAddress) {
+    const addressLimit = await enforceAuthLimit("login-address", clientAddress, 60, 15 * 60);
+
+    if (addressLimit) {
+      return addressLimit;
+    }
   }
 
   const user = await getUserByEmail(parsed.data.email);

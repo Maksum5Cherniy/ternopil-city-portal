@@ -1,11 +1,18 @@
+import { rejectCrossOriginMutation } from "@/lib/request-security";
 import { NextResponse } from "next/server";
+import { enforceAuthLimit } from "@/lib/auth-rate-limit";
 import { getCurrentServerSession } from "@/lib/auth-session";
 import { createEmailVerificationToken, getUserById, toPublicUser } from "@/lib/database";
 import { sendEmailVerification } from "@/lib/email";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(request: Request) {
+  const originError = rejectCrossOriginMutation(request);
+
+  if (originError) {
+    return originError;
+  }
   const session = await getCurrentServerSession();
 
   if (session.status !== "authenticated") {
@@ -24,6 +31,12 @@ export async function POST() {
       user: toPublicUser(user),
       message: "Email вже підтверджено.",
     });
+  }
+
+  const limit = await enforceAuthLimit("verify-user", user.id, 3, 60 * 60);
+
+  if (limit) {
+    return limit;
   }
 
   const token = await createEmailVerificationToken(user.id);

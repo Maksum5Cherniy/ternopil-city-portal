@@ -43,7 +43,7 @@ export default async function ProfileListingsPage() {
     return (
       <ListingsBlockedState
         title="База даних не налаштована"
-        description="Підключіть Neon Store у Vercel, щоб користувачі могли керувати оголошеннями."
+        description="Ваші оголошення тимчасово недоступні. Спробуйте пізніше."
       />
     );
   }
