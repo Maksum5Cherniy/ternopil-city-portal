@@ -5,7 +5,10 @@ import { ModulePage } from "@/components/content/ModulePage";
 import ReviewForm from "@/components/content/ReviewForm";
 import { findPortalEntity, placeCategories, places } from "@/constants/content";
 import { getPublicReviews } from "@/lib/database";
-import { getPublishedAdminPortalEntities, mergePortalEntities } from "@/lib/public-content";
+import {
+  getPublishedAdminPortalEntities,
+  mergePortalEntities,
+} from "@/lib/public-content";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -20,15 +23,22 @@ export function generateStaticParams() {
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const category = placeCategories.find((item) => item.slug === slug);
   const adminPlaceItems = await getPublishedAdminPortalEntities("place");
-  const item = findPortalEntity(mergePortalEntities(adminPlaceItems, places), slug);
+  const item = findPortalEntity(
+    mergePortalEntities(adminPlaceItems, places),
+    slug,
+  );
 
   return {
     title: category?.title || item?.title,
-    description: category ? `Заклади категорії ${category.title} у Тернополі.` : item?.description,
+    description: category
+      ? `Заклади категорії ${category.title} у Тернополі.`
+      : item?.description,
   };
 }
 
@@ -43,7 +53,7 @@ export default async function PlaceDetailPage({ params }: PageProps) {
       <ModulePage
         eyebrow="Категорія закладів"
         title={category.title}
-        description={`Заклади Тернополя у категорії "${category.title}" з фільтрами, картою, відгуками і заявками власників.`}
+        description={`Заклади Тернополя у категорії «${category.title}». Перевіряйте адресу, контакти й першоджерело перед візитом.`}
         items={allPlaces.filter((item) => item.category === category.slug)}
       />
     );
@@ -58,7 +68,12 @@ export default async function PlaceDetailPage({ params }: PageProps) {
   const reviews = await getPublicReviews(item.href);
 
   return (
-    <DetailPage item={item} backHref="/places" backLabel="До закладів" schemaType="LocalBusiness">
+    <DetailPage
+      item={item}
+      backHref="/places"
+      backLabel="До закладів"
+      schemaType="LocalBusiness"
+    >
       <ReviewForm targetHref={item.href} targetTitle={item.title} />
 
       <section className="mt-6 rounded-lg border border-border bg-surface p-6">
@@ -66,14 +81,21 @@ export default async function PlaceDetailPage({ params }: PageProps) {
         <div className="mt-4 grid gap-3">
           {reviews.length > 0 ? (
             reviews.map((review) => (
-              <article key={review.id} className="rounded-md border border-border p-4">
+              <article
+                key={review.id}
+                className="rounded-md border border-border p-4"
+              >
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="font-semibold">{review.userName || "Користувач"}</h3>
+                  <h3 className="font-semibold">
+                    {review.userName || "Користувач"}
+                  </h3>
                   <span className="text-sm font-semibold text-accent-strong">
                     {review.rating} / 5
                   </span>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-muted">{review.text}</p>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  {review.text}
+                </p>
                 {review.ownerReply ? (
                   <p className="mt-3 rounded-md bg-surface-subtle px-3 py-2 text-sm leading-6">
                     {review.ownerReply}
