@@ -70,8 +70,12 @@ The bundled news, venues and events are concise, sourced starting content.
 Use the admin panel's **Events** section to enter a title, description, start
 and optional end date, location, cost and an HTTPS source URL. A published
 event must have its date and source. After its end date it leaves the upcoming
-list automatically and stays available in the event archive. Keep source pages
-and venue details current; do not publish sample listings as real offers.
+list automatically and stays available in the event archive. The public event
+list filters by search, category, date and free admission. The **Places**
+section accepts a category, address, phone, website and optional latitude and
+longitude within the city; entries with coordinates appear on the map. Keep
+source pages and venue details current; do not publish sample listings as real
+offers.
 
 ## Release checks
 
