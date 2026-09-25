@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { registerSchema, type RegisterInput } from "@/schemas/auth";
@@ -22,7 +21,6 @@ async function readError(response: Response, fallback: string) {
 }
 
 export default function RegisterForm() {
-  const router = useRouter();
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
   const {
@@ -51,7 +49,9 @@ export default function RegisterForm() {
         const fieldName = issue.path[0];
 
         if (typeof fieldName === "string") {
-          setError(fieldName as keyof RegisterFormValues, { message: issue.message });
+          setError(fieldName as keyof RegisterFormValues, {
+            message: issue.message,
+          });
         }
       });
 
@@ -66,7 +66,10 @@ export default function RegisterForm() {
       });
 
       if (!response.ok) {
-        const apiError = await readError(response, "Не вдалося створити профіль.");
+        const apiError = await readError(
+          response,
+          "Не вдалося створити профіль.",
+        );
 
         if (apiError.field === "email") {
           setError("email", { message: apiError.message });
@@ -79,11 +82,14 @@ export default function RegisterForm() {
 
       setStatus("success");
       setMessage(body.message || uk.auth.profileCreated);
-      router.refresh();
-      router.push("/profile?verify=1");
+      window.location.assign(
+        new URL("/profile?verify=1", window.location.origin).href,
+      );
     } catch (error) {
       setStatus("error");
-      setMessage(error instanceof Error ? error.message : "Не вдалося створити профіль.");
+      setMessage(
+        error instanceof Error ? error.message : "Не вдалося створити профіль.",
+      );
     }
   };
 
@@ -101,7 +107,9 @@ export default function RegisterForm() {
           {...register("displayName")}
         />
         {errors.displayName ? (
-          <p className="mt-1 text-sm text-accent-strong">{errors.displayName.message}</p>
+          <p className="mt-1 text-sm text-accent-strong">
+            {errors.displayName.message}
+          </p>
         ) : null}
       </div>
 
@@ -117,7 +125,9 @@ export default function RegisterForm() {
           {...register("email")}
         />
         {errors.email ? (
-          <p className="mt-1 text-sm text-accent-strong">{errors.email.message}</p>
+          <p className="mt-1 text-sm text-accent-strong">
+            {errors.email.message}
+          </p>
         ) : null}
       </div>
 
@@ -134,7 +144,9 @@ export default function RegisterForm() {
             {...register("password")}
           />
           {errors.password ? (
-            <p className="mt-1 text-sm text-accent-strong">{errors.password.message}</p>
+            <p className="mt-1 text-sm text-accent-strong">
+              {errors.password.message}
+            </p>
           ) : null}
         </div>
         <div>
@@ -149,7 +161,9 @@ export default function RegisterForm() {
             {...register("confirmPassword")}
           />
           {errors.confirmPassword ? (
-            <p className="mt-1 text-sm text-accent-strong">{errors.confirmPassword.message}</p>
+            <p className="mt-1 text-sm text-accent-strong">
+              {errors.confirmPassword.message}
+            </p>
           ) : null}
         </div>
       </div>
@@ -166,14 +180,19 @@ export default function RegisterForm() {
             правила користування
           </Link>{" "}
           та{" "}
-          <Link href="/privacy" className="font-semibold text-primary underline">
+          <Link
+            href="/privacy"
+            className="font-semibold text-primary underline"
+          >
             політику конфіденційності
           </Link>
           .
         </span>
       </label>
       {errors.acceptTerms ? (
-        <p className="text-sm text-accent-strong">{errors.acceptTerms.message}</p>
+        <p className="text-sm text-accent-strong">
+          {errors.acceptTerms.message}
+        </p>
       ) : null}
 
       {message ? (
