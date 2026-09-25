@@ -9,20 +9,23 @@ export function ModulePage({
   description,
   items,
   emptyText = "У цьому розділі поки немає опублікованих матеріалів.",
+  headingLevel = "h1",
 }: {
   eyebrow: string;
   title: string;
   description: string;
   items: HomeCard[];
   emptyText?: string;
+  headingLevel?: "h1" | "h2";
 }) {
+  const Heading = headingLevel;
   return (
     <section className="mx-auto w-full max-w-[1180px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
       <div className="max-w-3xl">
         <Badge variant="primary">{eyebrow}</Badge>
-        <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-5xl">
+        <Heading className="mt-4 text-3xl font-semibold tracking-normal sm:text-5xl">
           {title}
-        </h1>
+        </Heading>
         <p className="mt-4 text-base leading-8 text-muted sm:text-lg">
           {description}
         </p>
