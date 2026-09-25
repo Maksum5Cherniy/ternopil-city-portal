@@ -206,7 +206,7 @@ export type NotificationSummary = {
   createdAt: string;
 };
 
-export type AdminContentType = "news" | "place" | "ad" | "home";
+export type AdminContentType = "news" | "place" | "event" | "ad" | "home";
 export type AdminContentStatus = "draft" | "published" | "archived";
 
 export type AdminContentItemSummary = {
@@ -218,6 +218,17 @@ export type AdminContentItemSummary = {
   status: AdminContentStatus;
   orderIndex: number;
   notes?: string;
+  eventDate?: string;
+  eventEndDate?: string;
+  eventLocation?: string;
+  eventPrice?: string;
+  sourceUrl?: string;
+  eventCategory?: string;
+  placeCategory?: string;
+  placeAddress?: string;
+  placePhone?: string;
+  placeLatitude?: string;
+  placeLongitude?: string;
   createdBy?: string;
   createdAt: string;
   updatedAt: string;
@@ -684,7 +695,7 @@ function toAdminContentItemSummary(row: {
   created_at: string;
   updated_at: string;
 }): AdminContentItemSummary {
-  const type = ["news", "place", "ad", "home"].includes(row.type)
+  const type = ["news", "place", "event", "ad", "home"].includes(row.type)
     ? (row.type as AdminContentType)
     : "news";
   const status = ["draft", "published", "archived"].includes(row.status)
@@ -702,6 +713,42 @@ function toAdminContentItemSummary(row: {
     status,
     orderIndex: Number(row.order_index) || 0,
     notes,
+    eventDate:
+      typeof payload.eventDate === "string" ? payload.eventDate : undefined,
+    eventEndDate:
+      typeof payload.eventEndDate === "string"
+        ? payload.eventEndDate
+        : undefined,
+    eventLocation:
+      typeof payload.eventLocation === "string"
+        ? payload.eventLocation
+        : undefined,
+    eventPrice:
+      typeof payload.eventPrice === "string" ? payload.eventPrice : undefined,
+    sourceUrl:
+      typeof payload.sourceUrl === "string" ? payload.sourceUrl : undefined,
+    eventCategory:
+      typeof payload.eventCategory === "string"
+        ? payload.eventCategory
+        : undefined,
+    placeCategory:
+      typeof payload.placeCategory === "string"
+        ? payload.placeCategory
+        : undefined,
+    placeAddress:
+      typeof payload.placeAddress === "string"
+        ? payload.placeAddress
+        : undefined,
+    placePhone:
+      typeof payload.placePhone === "string" ? payload.placePhone : undefined,
+    placeLatitude:
+      typeof payload.placeLatitude === "string"
+        ? payload.placeLatitude
+        : undefined,
+    placeLongitude:
+      typeof payload.placeLongitude === "string"
+        ? payload.placeLongitude
+        : undefined,
     createdBy: row.created_by || undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -2034,11 +2081,41 @@ export async function upsertAdminContentItem(input: {
   status: AdminContentStatus;
   orderIndex?: number;
   notes?: string;
+  eventDate?: string;
+  eventEndDate?: string;
+  eventLocation?: string;
+  eventPrice?: string;
+  sourceUrl?: string;
+  eventCategory?: string;
+  placeCategory?: string;
+  placeAddress?: string;
+  placePhone?: string;
+  placeLatitude?: string;
+  placeLongitude?: string;
 }) {
   await ensureDatabaseSchema();
 
   const id = input.id || randomUUID();
-  const payload = { notes: sanitizeText(input.notes, 1200) };
+  const payload = {
+    notes: sanitizeText(input.notes, 1200),
+    eventDate: input.type === "event" ? input.eventDate || "" : "",
+    eventEndDate: input.type === "event" ? input.eventEndDate || "" : "",
+    eventLocation:
+      input.type === "event" ? sanitizeText(input.eventLocation, 200) : "",
+    eventPrice:
+      input.type === "event" ? sanitizeText(input.eventPrice, 100) : "",
+    sourceUrl: ["event", "place", "news"].includes(input.type)
+      ? input.sourceUrl || ""
+      : "",
+    eventCategory: input.type === "event" ? input.eventCategory || "" : "",
+    placeCategory: input.type === "place" ? input.placeCategory || "" : "",
+    placeAddress:
+      input.type === "place" ? sanitizeText(input.placeAddress, 200) : "",
+    placePhone:
+      input.type === "place" ? sanitizeText(input.placePhone, 40) : "",
+    placeLatitude: input.type === "place" ? input.placeLatitude || "" : "",
+    placeLongitude: input.type === "place" ? input.placeLongitude || "" : "",
+  };
   const rows = (await getSql().query(
     `
       INSERT INTO admin_content_items (
@@ -2108,6 +2185,7 @@ export async function updateAdminContentStatus(input: {
       SET status = $2,
           updated_at = NOW()
       WHERE id = $1
+        AND ($2 <> 'published' OR type <> 'event' OR (payload->>'eventDate' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' AND payload->>'sourceUrl' LIKE 'https://%'))
       RETURNING *
     `,
     [input.id, input.status],
