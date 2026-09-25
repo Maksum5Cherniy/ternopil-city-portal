@@ -1,7 +1,23 @@
 -- Review before applying with the neondb_owner connection.
--- The deternopil_runtime login is created separately in Neon.
+-- Create the deternopil_runtime login with SQL and a strong secret supplied
+-- outside Git. Neon Console/API/CLI-created roles inherit neon_superuser.
 -- These grants cover the 14 tables used by the current application only.
 -- No schema CREATE, table ownership, or default future-table rights are granted.
+
+DO $$
+DECLARE safe_role BOOLEAN;
+BEGIN
+  SELECT NOT r.rolcreaterole
+     AND NOT r.rolcreatedb
+     AND NOT pg_has_role(r.oid, 'neon_superuser', 'member')
+    INTO safe_role
+    FROM pg_roles r
+   WHERE r.rolname = 'deternopil_runtime';
+
+  IF safe_role IS DISTINCT FROM TRUE THEN
+    RAISE EXCEPTION 'Create a limited deternopil_runtime login via SQL before granting access';
+  END IF;
+END $$;
 
 GRANT USAGE ON SCHEMA public TO deternopil_runtime;
 
