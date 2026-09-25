@@ -51,8 +51,6 @@ export const uk = {
       { href: "/register", label: "Створити профіль" },
       { href: "/profile", label: "Особистий кабінет" },
       { href: "/owner", label: "Кабінет власника" },
-      { href: "/moderation", label: "Модерація" },
-      { href: "/admin", label: "Адмінпанель" },
     ],
   },
   home: {
