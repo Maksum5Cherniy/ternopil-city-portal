@@ -9,6 +9,10 @@ let tableReady: Promise<void> | undefined;
 async function ensureRateLimitTable() {
   await ensureDatabaseSchema();
 
+  if (process.env.DATABASE_SCHEMA_MODE === "external") {
+    return;
+  }
+
   if (!tableReady) {
     tableReady = getSql()
       .query(
