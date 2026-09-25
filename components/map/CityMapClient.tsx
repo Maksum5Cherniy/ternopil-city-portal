@@ -4,7 +4,13 @@ import L from "leaflet";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
-import { Crosshair, ExternalLink, LocateFixed, Navigation, Search } from "lucide-react";
+import {
+  Crosshair,
+  ExternalLink,
+  LocateFixed,
+  Navigation,
+  Search,
+} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { LinkButton } from "@/components/ui/Button";
 import type { CityMapPoint, CityMapPointType } from "@/lib/map-points";
@@ -17,14 +23,12 @@ const typeLabels: Record<CityMapPointType | "all", string> = {
   place: "Заклади",
   location: "Локації",
   event: "Події",
-  service: "Сервіси",
 };
 
 const markerClasses: Record<CityMapPointType, string> = {
   place: "city-map-marker-place",
   location: "city-map-marker-location",
   event: "city-map-marker-event",
-  service: "city-map-marker-service",
 };
 
 function routeHref(point: CityMapPoint) {
@@ -46,7 +50,9 @@ function FlyToPoint({ point }: { point?: CityMapPoint }) {
 
   useEffect(() => {
     if (point) {
-      map.flyTo([point.lat, point.lng], Math.max(map.getZoom(), 15), { duration: 0.65 });
+      map.flyTo([point.lat, point.lng], Math.max(map.getZoom(), 15), {
+        duration: 0.65,
+      });
     }
   }, [map, point]);
 
@@ -67,7 +73,9 @@ function LocateButton() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setStatus("");
-        map.flyTo([position.coords.latitude, position.coords.longitude], 15, { duration: 0.75 });
+        map.flyTo([position.coords.latitude, position.coords.longitude], 15, {
+          duration: 0.75,
+        });
       },
       () => setStatus("Не вдалося визначити"),
       { enableHighAccuracy: true, timeout: 8000 },
@@ -111,7 +119,13 @@ export default function CityMapClient({
       const matchesType = activeType === "all" || point.type === activeType;
       const matchesQuery =
         !normalizedQuery ||
-        [point.title, point.description, point.address, point.meta, point.category]
+        [
+          point.title,
+          point.description,
+          point.address,
+          point.meta,
+          point.category,
+        ]
           .filter(Boolean)
           .join(" ")
           .toLowerCase()
@@ -122,7 +136,8 @@ export default function CityMapClient({
   }, [activeType, points, query]);
 
   const selectedPoint =
-    filteredPoints.find((point) => point.id === selectedId) || filteredPoints[0] || points[0];
+    filteredPoints.find((point) => point.id === selectedId) ||
+    filteredPoints[0];
 
   return (
     <div className="grid gap-4 lg:grid-cols-[0.78fr_1.22fr]">
@@ -139,24 +154,29 @@ export default function CityMapClient({
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          {(Object.keys(typeLabels) as Array<CityMapPointType | "all">).map((type) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => {
-                setActiveType(type);
-                setSelectedId("");
-              }}
-              className={cn(
-                "min-h-9 rounded-md border px-3 text-sm font-semibold transition",
-                activeType === type
-                  ? "border-primary bg-primary text-white"
-                  : "border-border bg-surface-subtle text-foreground hover:border-primary hover:text-primary",
-              )}
-            >
-              {typeLabels[type]}
-            </button>
-          ))}
+          {(Object.keys(typeLabels) as Array<CityMapPointType | "all">)
+            .filter(
+              (type) =>
+                type === "all" || points.some((point) => point.type === type),
+            )
+            .map((type) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => {
+                  setActiveType(type);
+                  setSelectedId("");
+                }}
+                className={cn(
+                  "min-h-9 rounded-md border px-3 text-sm font-semibold transition",
+                  activeType === type
+                    ? "border-primary bg-primary text-white"
+                    : "border-border bg-surface-subtle text-foreground hover:border-primary hover:text-primary",
+                )}
+              >
+                {typeLabels[type]}
+              </button>
+            ))}
         </div>
 
         <div className="mt-4 grid max-h-[466px] gap-2 overflow-y-auto pr-1">
@@ -174,15 +194,21 @@ export default function CityMapClient({
                 )}
               >
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={point.type === "event" ? "warning" : "primary"}>
+                  <Badge
+                    variant={point.type === "event" ? "warning" : "primary"}
+                  >
                     {typeLabels[point.type]}
                   </Badge>
                   {point.meta ? (
-                    <span className="text-xs font-semibold text-muted">{point.meta}</span>
+                    <span className="text-xs font-semibold text-muted">
+                      {point.meta}
+                    </span>
                   ) : null}
                 </div>
                 <h2 className="mt-2 text-base font-semibold">{point.title}</h2>
-                <p className="mt-1 text-sm leading-5 text-muted">{point.description}</p>
+                <p className="mt-1 text-sm leading-5 text-muted">
+                  {point.description}
+                </p>
                 {point.address ? (
                   <p className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary">
                     <Crosshair aria-hidden size={14} />
@@ -228,10 +254,16 @@ export default function CityMapClient({
                     <div className="text-xs font-semibold uppercase text-primary">
                       {typeLabels[point.type]}
                     </div>
-                    <h3 className="mt-1 text-base font-semibold">{point.title}</h3>
-                    <p className="mt-1 text-sm leading-5 text-muted">{point.description}</p>
+                    <h3 className="mt-1 text-base font-semibold">
+                      {point.title}
+                    </h3>
+                    <p className="mt-1 text-sm leading-5 text-muted">
+                      {point.description}
+                    </p>
                     {point.address ? (
-                      <p className="mt-2 text-xs font-semibold text-foreground">{point.address}</p>
+                      <p className="mt-2 text-xs font-semibold text-foreground">
+                        {point.address}
+                      </p>
                     ) : null}
                     <div className="mt-3 flex flex-wrap gap-2">
                       {point.href ? (
@@ -262,13 +294,19 @@ export default function CityMapClient({
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="primary">{typeLabels[selectedPoint.type]}</Badge>
+                  <Badge variant="primary">
+                    {typeLabels[selectedPoint.type]}
+                  </Badge>
                   {selectedPoint.badge ? (
                     <Badge variant="warning">{selectedPoint.badge}</Badge>
                   ) : null}
                 </div>
-                <h2 className="mt-2 text-lg font-semibold">{selectedPoint.title}</h2>
-                <p className="mt-1 text-sm leading-6 text-muted">{selectedPoint.description}</p>
+                <h2 className="mt-2 text-lg font-semibold">
+                  {selectedPoint.title}
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-muted">
+                  {selectedPoint.description}
+                </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {selectedPoint.href ? (
