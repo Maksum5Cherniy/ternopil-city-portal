@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { eventCategories, placeCategories } from "@/constants/content";
 import type {
   AdminContentStatus,
   AdminContentType,
@@ -26,16 +27,41 @@ import type {
 } from "@/lib/database-core";
 import type { UserRole } from "@/types";
 
-const roleOptions: Array<{ value: UserRole; label: string; description: string }> = [
-  { value: "user", label: "user", description: "Базовий профіль, оголошення після email." },
-  { value: "owner", label: "owner", description: "Кабінет власника закладу і заявки." },
-  { value: "moderator", label: "moderator", description: "Модерація оголошень, скарг і заявок." },
-  { value: "admin", label: "admin", description: "Повний доступ до адмін-панелі." },
+const roleOptions: Array<{
+  value: UserRole;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "user",
+    label: "user",
+    description: "Базовий профіль, оголошення після email.",
+  },
+  {
+    value: "owner",
+    label: "owner",
+    description: "Кабінет власника закладу і заявки.",
+  },
+  {
+    value: "moderator",
+    label: "moderator",
+    description: "Модерація оголошень, скарг і заявок.",
+  },
+  {
+    value: "admin",
+    label: "admin",
+    description: "Повний доступ до адмін-панелі.",
+  },
 ];
 
 const contentLabels: Record<
   AdminContentType,
-  { title: string; createTitle: string; description: string; hrefPlaceholder: string }
+  {
+    title: string;
+    createTitle: string;
+    description: string;
+    hrefPlaceholder: string;
+  }
 > = {
   news: {
     title: "Новини",
@@ -48,6 +74,13 @@ const contentLabels: Record<
     createTitle: "Додати заклад",
     description: "Каталог закладів, заявки власників і зміни в картках.",
     hrefPlaceholder: "/places/slug або сайт закладу",
+  },
+  event: {
+    title: "Події",
+    createTitle: "Додати подію",
+    description:
+      "Дата, місце, ціна та джерело анонсу. Минулі події автоматично переходять до архіву.",
+    hrefPlaceholder: "/events/slug або залиште порожнім",
   },
   ad: {
     title: "Реклама",
@@ -69,8 +102,14 @@ const statusOptions: Array<{ value: AdminContentStatus; label: string }> = [
   { value: "archived", label: "Архів" },
 ];
 
-const settingLabels: Record<string, { label: string; hint: string; multiline?: boolean }> = {
-  site_title: { label: "Назва сайту", hint: "Використовується в SEO та службових листах." },
+const settingLabels: Record<
+  string,
+  { label: string; hint: string; multiline?: boolean }
+> = {
+  site_title: {
+    label: "Назва сайту",
+    hint: "Використовується в SEO та службових листах.",
+  },
   site_description: {
     label: "Опис сайту",
     hint: "Короткий SEO-опис порталу.",
@@ -80,7 +119,11 @@ const settingLabels: Record<string, { label: string; hint: string; multiline?: b
     label: "Контактний Telegram",
     hint: "Основний публічний канал для реклами, партнерства і підтримки.",
   },
-  seo_keywords: { label: "SEO ключові слова", hint: "Список через кому.", multiline: true },
+  seo_keywords: {
+    label: "SEO ключові слова",
+    hint: "Список через кому.",
+    multiline: true,
+  },
   homepage_notice: {
     label: "Оголошення на головній",
     hint: "Службовий текст або промо-оголошення.",
@@ -132,7 +175,10 @@ function Section({
           <h2 className="text-xl font-semibold">{title}</h2>
           <p className="mt-1 text-sm leading-6 text-muted">{description}</p>
         </div>
-        <a href="#admin-top" className="text-sm font-semibold text-primary underline">
+        <a
+          href="#admin-top"
+          className="text-sm font-semibold text-primary underline"
+        >
           До карток
         </a>
       </div>
@@ -182,12 +228,18 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося оновити користувача."));
+        throw new Error(
+          await readError(response, "Не вдалося оновити користувача."),
+        );
       }
 
       refreshWithMessage("Користувача оновлено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося оновити користувача.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не вдалося оновити користувача.",
+      );
     } finally {
       setIsBusy(false);
     }
@@ -208,18 +260,27 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося змінити статус оголошення."));
+        throw new Error(
+          await readError(response, "Не вдалося змінити статус оголошення."),
+        );
       }
 
       refreshWithMessage("Статус оголошення оновлено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося змінити статус оголошення.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не вдалося змінити статус оголошення.",
+      );
     } finally {
       setIsBusy(false);
     }
   };
 
-  const moderateClaim = async (claimId: string, status: "approved" | "rejected") => {
+  const moderateClaim = async (
+    claimId: string,
+    status: "approved" | "rejected",
+  ) => {
     setMessage("");
     setIsBusy(true);
 
@@ -231,18 +292,27 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося змінити статус заявки."));
+        throw new Error(
+          await readError(response, "Не вдалося змінити статус заявки."),
+        );
       }
 
       refreshWithMessage("Заявку власника оновлено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося змінити статус заявки.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не вдалося змінити статус заявки.",
+      );
     } finally {
       setIsBusy(false);
     }
   };
 
-  const moderateReport = async (reportId: string, status: "reviewed" | "dismissed" | "blocked") => {
+  const moderateReport = async (
+    reportId: string,
+    status: "reviewed" | "dismissed" | "blocked",
+  ) => {
     setMessage("");
     setIsBusy(true);
 
@@ -254,12 +324,18 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося змінити статус скарги."));
+        throw new Error(
+          await readError(response, "Не вдалося змінити статус скарги."),
+        );
       }
 
       refreshWithMessage("Скаргу оновлено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося змінити статус скарги.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не вдалося змінити статус скарги.",
+      );
     } finally {
       setIsBusy(false);
     }
@@ -280,18 +356,28 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося змінити статус відгуку."));
+        throw new Error(
+          await readError(response, "Не вдалося змінити статус відгуку."),
+        );
       }
 
       refreshWithMessage("Відгук оновлено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося змінити статус відгуку.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не вдалося змінити статус відгуку.",
+      );
     } finally {
       setIsBusy(false);
     }
   };
 
-  const saveContent = async (formData: FormData, type: AdminContentType, id?: string) => {
+  const saveContent = async (
+    formData: FormData,
+    type: AdminContentType,
+    id?: string,
+  ) => {
     setMessage("");
     setIsBusy(true);
 
@@ -304,6 +390,55 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       status: String(formData.get(`${type}-status-${id || "new"}`) || "draft"),
       orderIndex: Number(formData.get(`${type}-order-${id || "new"}`) || 0),
       notes: String(formData.get(`${type}-notes-${id || "new"}`) || ""),
+      ...(type === "event"
+        ? {
+            eventDate: String(
+              formData.get(`${type}-date-${id || "new"}`) || "",
+            ),
+            eventEndDate: String(
+              formData.get(`${type}-end-date-${id || "new"}`) || "",
+            ),
+            eventLocation: String(
+              formData.get(`${type}-location-${id || "new"}`) || "",
+            ),
+            eventPrice: String(
+              formData.get(`${type}-price-${id || "new"}`) || "",
+            ),
+            sourceUrl: String(
+              formData.get(`${type}-source-${id || "new"}`) || "",
+            ),
+            eventCategory: String(
+              formData.get(`${type}-category-${id || "new"}`) || "festivals",
+            ),
+          }
+        : {}),
+      ...(type === "place"
+        ? {
+            placeCategory: String(
+              formData.get(`place-category-${id || "new"}`) || "restaurants",
+            ),
+            placeAddress: String(
+              formData.get(`place-address-${id || "new"}`) || "",
+            ),
+            placePhone: String(
+              formData.get(`place-phone-${id || "new"}`) || "",
+            ),
+            placeLatitude: String(
+              formData.get(`place-lat-${id || "new"}`) || "",
+            ),
+            placeLongitude: String(
+              formData.get(`place-lng-${id || "new"}`) || "",
+            ),
+            sourceUrl: String(
+              formData.get(`place-source-${id || "new"}`) || "",
+            ),
+          }
+        : {}),
+      ...(type === "news"
+        ? {
+            sourceUrl: String(formData.get(`news-source-${id || "new"}`) || ""),
+          }
+        : {}),
     };
 
     try {
@@ -314,18 +449,25 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося зберегти запис."));
+        throw new Error(
+          await readError(response, "Не вдалося зберегти запис."),
+        );
       }
 
       refreshWithMessage(id ? "Запис оновлено." : "Запис створено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося зберегти запис.");
+      setMessage(
+        error instanceof Error ? error.message : "Не вдалося зберегти запис.",
+      );
     } finally {
       setIsBusy(false);
     }
   };
 
-  const updateContentStatus = async (id: string, status: AdminContentStatus) => {
+  const updateContentStatus = async (
+    id: string,
+    status: AdminContentStatus,
+  ) => {
     setMessage("");
     setIsBusy(true);
 
@@ -337,12 +479,18 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося змінити статус запису."));
+        throw new Error(
+          await readError(response, "Не вдалося змінити статус запису."),
+        );
       }
 
       refreshWithMessage("Статус запису оновлено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося змінити статус запису.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не вдалося змінити статус запису.",
+      );
     } finally {
       setIsBusy(false);
     }
@@ -364,12 +512,16 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося видалити запис."));
+        throw new Error(
+          await readError(response, "Не вдалося видалити запис."),
+        );
       }
 
       refreshWithMessage("Запис видалено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося видалити запис.");
+      setMessage(
+        error instanceof Error ? error.message : "Не вдалося видалити запис.",
+      );
     } finally {
       setIsBusy(false);
     }
@@ -392,12 +544,18 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося зберегти налаштування."));
+        throw new Error(
+          await readError(response, "Не вдалося зберегти налаштування."),
+        );
       }
 
       refreshWithMessage("Налаштування збережено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося зберегти налаштування.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не вдалося зберегти налаштування.",
+      );
     } finally {
       setIsBusy(false);
     }
@@ -419,13 +577,21 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося надіслати сповіщення."));
+        throw new Error(
+          await readError(response, "Не вдалося надіслати сповіщення."),
+        );
       }
 
-      const body = (await response.json().catch(() => null)) as { message?: string } | null;
+      const body = (await response.json().catch(() => null)) as {
+        message?: string;
+      } | null;
       refreshWithMessage(body?.message || "Сповіщення надіслано.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося надіслати сповіщення.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не вдалося надіслати сповіщення.",
+      );
     } finally {
       setIsBusy(false);
     }
@@ -447,12 +613,18 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося видалити сповіщення."));
+        throw new Error(
+          await readError(response, "Не вдалося видалити сповіщення."),
+        );
       }
 
       refreshWithMessage("Сповіщення видалено.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося видалити сповіщення.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не вдалося видалити сповіщення.",
+      );
     } finally {
       setIsBusy(false);
     }
@@ -470,7 +642,11 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
         >
           <h3 className="font-semibold">{labels.createTitle}</h3>
           <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr_120px_150px]">
-            <input name={`${type}-title-new`} placeholder="Назва" className={fieldClass} />
+            <input
+              name={`${type}-title-new`}
+              placeholder="Назва"
+              className={fieldClass}
+            />
             <input
               name={`${type}-href-new`}
               placeholder={labels.hrefPlaceholder}
@@ -484,7 +660,11 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
               aria-label="Порядок"
               className={fieldClass}
             />
-            <select name={`${type}-status-new`} defaultValue="draft" className={fieldClass}>
+            <select
+              name={`${type}-status-new`}
+              defaultValue="draft"
+              className={fieldClass}
+            >
               {statusOptions.map((status) => (
                 <option key={status.value} value={status.value}>
                   {status.label}
@@ -498,13 +678,141 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
             rows={3}
             className={fieldClass}
           />
+          {type === "news" ? (
+            <label className="grid gap-1 text-sm">
+              Посилання на першоджерело HTTPS
+              <input
+                name="news-source-new"
+                type="url"
+                placeholder="https://..."
+                className={fieldClass}
+              />
+            </label>
+          ) : null}
+          {type === "place" ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <label className="grid gap-1 text-sm">
+                Категорія
+                <select name="place-category-new" className={fieldClass}>
+                  {placeCategories.map((category) => (
+                    <option key={category.slug} value={category.slug}>
+                      {category.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-1 text-sm">
+                Адреса
+                <input name="place-address-new" className={fieldClass} />
+              </label>
+              <label className="grid gap-1 text-sm">
+                Телефон
+                <input
+                  name="place-phone-new"
+                  type="tel"
+                  className={fieldClass}
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                Широта для карти
+                <input
+                  name="place-lat-new"
+                  type="number"
+                  step="any"
+                  min="49.4"
+                  max="49.7"
+                  className={fieldClass}
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                Довгота для карти
+                <input
+                  name="place-lng-new"
+                  type="number"
+                  step="any"
+                  min="25.4"
+                  max="25.8"
+                  className={fieldClass}
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                Сайт закладу HTTPS
+                <input
+                  name="place-source-new"
+                  type="url"
+                  placeholder="https://..."
+                  className={fieldClass}
+                />
+              </label>
+            </div>
+          ) : null}
+          {type === "event" ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <label className="grid gap-1 text-sm">
+                Початок
+                <input
+                  name="event-date-new"
+                  type="date"
+                  required
+                  className={fieldClass}
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                Завершення
+                <input
+                  name="event-end-date-new"
+                  type="date"
+                  className={fieldClass}
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                Категорія
+                <select name="event-category-new" className={fieldClass}>
+                  {eventCategories.map((category) => (
+                    <option key={category.slug} value={category.slug}>
+                      {category.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-1 text-sm">
+                Місце
+                <input name="event-location-new" className={fieldClass} />
+              </label>
+              <label className="grid gap-1 text-sm">
+                Вартість
+                <input
+                  name="event-price-new"
+                  placeholder="Вхід вільний"
+                  className={fieldClass}
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                Джерело HTTPS
+                <input
+                  name="event-source-new"
+                  type="url"
+                  placeholder="https://..."
+                  className={fieldClass}
+                />
+              </label>
+            </div>
+          ) : null}
           <textarea
             name={`${type}-notes-new`}
-            placeholder="Адмін-нотатки, категорія, контакти, умови показу"
+            placeholder={
+              type === "event"
+                ? "Опис події для відвідувачів"
+                : "Опис матеріалу"
+            }
             rows={2}
             className={fieldClass}
           />
-          <Button type="submit" disabled={isBusy} leftIcon={<Save aria-hidden size={16} />}>
+          <Button
+            type="submit"
+            disabled={isBusy}
+            leftIcon={<Save aria-hidden size={16} />}
+          >
             Створити
           </Button>
         </form>
@@ -521,7 +829,9 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-semibold">{item.title}</h3>
-                      <Badge variant={statusVariant(item.status)}>{item.status}</Badge>
+                      <Badge variant={statusVariant(item.status)}>
+                        {item.status}
+                      </Badge>
                     </div>
                     <p className="mt-1 text-xs text-muted">
                       Оновлено: {formatDate(item.updatedAt)}
@@ -605,6 +915,147 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                   rows={2}
                   className={fieldClass}
                 />
+                {type === "news" ? (
+                  <label className="grid gap-1 text-sm">
+                    Посилання на першоджерело HTTPS
+                    <input
+                      name={`news-source-${item.id}`}
+                      type="url"
+                      defaultValue={item.sourceUrl || ""}
+                      className={fieldClass}
+                    />
+                  </label>
+                ) : null}
+                {type === "place" ? (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <label className="grid gap-1 text-sm">
+                      Категорія
+                      <select
+                        name={`place-category-${item.id}`}
+                        defaultValue={item.placeCategory || "restaurants"}
+                        className={fieldClass}
+                      >
+                        {placeCategories.map((category) => (
+                          <option key={category.slug} value={category.slug}>
+                            {category.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      Адреса
+                      <input
+                        name={`place-address-${item.id}`}
+                        defaultValue={item.placeAddress || ""}
+                        className={fieldClass}
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      Телефон
+                      <input
+                        name={`place-phone-${item.id}`}
+                        type="tel"
+                        defaultValue={item.placePhone || ""}
+                        className={fieldClass}
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      Широта для карти
+                      <input
+                        name={`place-lat-${item.id}`}
+                        type="number"
+                        step="any"
+                        min="49.4"
+                        max="49.7"
+                        defaultValue={item.placeLatitude || ""}
+                        className={fieldClass}
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      Довгота для карти
+                      <input
+                        name={`place-lng-${item.id}`}
+                        type="number"
+                        step="any"
+                        min="25.4"
+                        max="25.8"
+                        defaultValue={item.placeLongitude || ""}
+                        className={fieldClass}
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      Сайт закладу HTTPS
+                      <input
+                        name={`place-source-${item.id}`}
+                        type="url"
+                        defaultValue={item.sourceUrl || ""}
+                        className={fieldClass}
+                      />
+                    </label>
+                  </div>
+                ) : null}
+                {type === "event" ? (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <label className="grid gap-1 text-sm">
+                      Початок
+                      <input
+                        name={`event-date-${item.id}`}
+                        type="date"
+                        defaultValue={item.eventDate || ""}
+                        required
+                        className={fieldClass}
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      Завершення
+                      <input
+                        name={`event-end-date-${item.id}`}
+                        type="date"
+                        defaultValue={item.eventEndDate || ""}
+                        className={fieldClass}
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      Категорія
+                      <select
+                        name={`event-category-${item.id}`}
+                        defaultValue={item.eventCategory || "festivals"}
+                        className={fieldClass}
+                      >
+                        {eventCategories.map((category) => (
+                          <option key={category.slug} value={category.slug}>
+                            {category.title}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      Місце
+                      <input
+                        name={`event-location-${item.id}`}
+                        defaultValue={item.eventLocation || ""}
+                        className={fieldClass}
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      Вартість
+                      <input
+                        name={`event-price-${item.id}`}
+                        defaultValue={item.eventPrice || ""}
+                        className={fieldClass}
+                      />
+                    </label>
+                    <label className="grid gap-1 text-sm">
+                      Джерело HTTPS
+                      <input
+                        name={`event-source-${item.id}`}
+                        type="url"
+                        defaultValue={item.sourceUrl || ""}
+                        className={fieldClass}
+                      />
+                    </label>
+                  </div>
+                ) : null}
                 <textarea
                   name={`${type}-notes-${item.id}`}
                   defaultValue={item.notes || ""}
@@ -622,7 +1073,9 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
               </form>
             ))
           ) : (
-            <EmptyState>Записів ще немає. Створіть перший запис у формі вище.</EmptyState>
+            <EmptyState>
+              Записів ще немає. Створіть перший запис у формі вище.
+            </EmptyState>
           )}
         </div>
       </div>
@@ -728,10 +1181,15 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
               <div className="flex items-center justify-between gap-3">
                 <h3 className="font-semibold">{role.label}</h3>
                 <Badge variant={role.value === "admin" ? "warning" : "primary"}>
-                  {data.users.filter((user) => user.roles.includes(role.value)).length}
+                  {
+                    data.users.filter((user) => user.roles.includes(role.value))
+                      .length
+                  }
                 </Badge>
               </div>
-              <p className="mt-2 text-sm leading-6 text-muted">{role.description}</p>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {role.description}
+              </p>
             </div>
           ))}
         </div>
@@ -743,6 +1201,14 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
         description={contentLabels.news.description}
       >
         {renderContentManager("news")}
+      </Section>
+
+      <Section
+        id="admin-events"
+        title={contentLabels.event.title}
+        description={contentLabels.event.description}
+      >
+        {renderContentManager("event")}
       </Section>
 
       <Section
@@ -760,7 +1226,9 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                   <div key={claim.id} className={panelClass}>
                     <div className="flex flex-wrap items-center gap-2">
                       <h4 className="font-semibold">{claim.placeName}</h4>
-                      <Badge variant={statusVariant(claim.status)}>{claim.status}</Badge>
+                      <Badge variant={statusVariant(claim.status)}>
+                        {claim.status}
+                      </Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted">
                       {claim.phone || claim.businessEmail || claim.address}
@@ -822,9 +1290,12 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                       <Badge>{listing.status}</Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted">
-                      {listing.authorName} · {listing.authorEmail} · {formatDate(listing.createdAt)}
+                      {listing.authorName} · {listing.authorEmail} ·{" "}
+                      {formatDate(listing.createdAt)}
                     </p>
-                    <p className="mt-2 text-sm leading-6">{listing.description}</p>
+                    <p className="mt-2 text-sm leading-6">
+                      {listing.description}
+                    </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <Button
                         type="button"
@@ -885,11 +1356,14 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                   <div key={review.id} className={panelClass}>
                     <div className="flex flex-wrap items-center gap-2">
                       <h4 className="font-semibold">{review.targetTitle}</h4>
-                      <Badge variant={statusVariant(review.status)}>{review.status}</Badge>
+                      <Badge variant={statusVariant(review.status)}>
+                        {review.status}
+                      </Badge>
                       <Badge>{review.rating} / 5</Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted">
-                      {review.userName || "Користувач"} · {review.userEmail || "email приховано"} ·{" "}
+                      {review.userName || "Користувач"} ·{" "}
+                      {review.userEmail || "email приховано"} ·{" "}
                       {formatDate(review.createdAt)}
                     </p>
                     <p className="mt-2 text-sm leading-6">{review.text}</p>
@@ -954,8 +1428,14 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
             data.reports.map((report) => (
               <div key={report.id} className={panelClass}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-semibold">{report.entityTitle || report.entityId}</h3>
-                  <Badge variant={report.status === "pending" ? "warning" : "primary"}>
+                  <h3 className="font-semibold">
+                    {report.entityTitle || report.entityId}
+                  </h3>
+                  <Badge
+                    variant={
+                      report.status === "pending" ? "warning" : "primary"
+                    }
+                  >
                     {report.status}
                   </Badge>
                 </div>
@@ -963,7 +1443,9 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                   {report.entityType}
                   {report.reporterEmail ? ` · ${report.reporterEmail}` : ""}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-muted">{report.reason}</p>
+                <p className="mt-2 text-sm leading-6 text-muted">
+                  {report.reason}
+                </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button
                     type="button"
@@ -1026,21 +1508,33 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       >
         <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
           <form action={sendNotification} className="grid gap-3">
-            <select name="notification-target" defaultValue="all" className={fieldClass}>
+            <select
+              name="notification-target"
+              defaultValue="all"
+              className={fieldClass}
+            >
               <option value="all">Усім профілям</option>
               <option value="users">Підтвердженим користувачам</option>
               <option value="owners">Власникам</option>
               <option value="moderators">Модераторам</option>
               <option value="admins">Адмінам</option>
             </select>
-            <input name="notification-title" placeholder="Заголовок" className={fieldClass} />
+            <input
+              name="notification-title"
+              placeholder="Заголовок"
+              className={fieldClass}
+            />
             <textarea
               name="notification-body"
               placeholder="Текст повідомлення"
               rows={5}
               className={fieldClass}
             />
-            <Button type="submit" disabled={isBusy} leftIcon={<Send aria-hidden size={16} />}>
+            <Button
+              type="submit"
+              disabled={isBusy}
+              leftIcon={<Send aria-hidden size={16} />}
+            >
               Надіслати
             </Button>
           </form>
@@ -1051,7 +1545,9 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-semibold">{notification.title}</span>
+                        <span className="font-semibold">
+                          {notification.title}
+                        </span>
                         <Badge>{notification.type}</Badge>
                       </div>
                       <p className="mt-1 text-muted">
@@ -1099,7 +1595,9 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
               Сповіщення: data.stats.sentNotifications,
             }).map(([label, value]) => (
               <div key={label} className="bg-surface p-4">
-                <div className="text-2xl font-semibold text-primary">{value}</div>
+                <div className="text-2xl font-semibold text-primary">
+                  {value}
+                </div>
                 <div className="mt-1 text-sm text-muted">{label}</div>
               </div>
             ))}
@@ -1107,11 +1605,15 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
           <div className="grid gap-2">
             {data.auditLogs.length > 0 ? (
               data.auditLogs.map((log) => (
-                <div key={log.id} className="rounded-md border border-border px-3 py-2 text-sm">
+                <div
+                  key={log.id}
+                  className="rounded-md border border-border px-3 py-2 text-sm"
+                >
                   <span className="font-semibold">{log.action}</span>{" "}
                   <span className="text-muted">
                     {log.entityType}
-                    {log.entityId ? `:${log.entityId}` : ""} · {formatDate(log.createdAt)}
+                    {log.entityId ? `:${log.entityId}` : ""} ·{" "}
+                    {formatDate(log.createdAt)}
                   </span>
                 </div>
               ))
@@ -1129,7 +1631,10 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
       >
         <form action={saveSettings} className="grid gap-4">
           {data.settings.map((setting: SiteSettingSummary) => {
-            const meta = settingLabels[setting.key] || { label: setting.key, hint: "" };
+            const meta = settingLabels[setting.key] || {
+              label: setting.key,
+              hint: "",
+            };
 
             return (
               <label key={setting.key} className="grid gap-2">
@@ -1148,11 +1653,17 @@ export default function AdminConsole({ data }: { data: AdminDashboardData }) {
                     className={fieldClass}
                   />
                 )}
-                {meta.hint ? <span className="text-xs text-muted">{meta.hint}</span> : null}
+                {meta.hint ? (
+                  <span className="text-xs text-muted">{meta.hint}</span>
+                ) : null}
               </label>
             );
           })}
-          <Button type="submit" disabled={isBusy} leftIcon={<Save aria-hidden size={16} />}>
+          <Button
+            type="submit"
+            disabled={isBusy}
+            leftIcon={<Save aria-hidden size={16} />}
+          >
             Зберегти налаштування
           </Button>
         </form>
