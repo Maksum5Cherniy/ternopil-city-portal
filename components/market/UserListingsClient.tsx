@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Archive, ExternalLink, RefreshCcw, Trash2, BadgeCheck } from "lucide-react";
+import {
+  Archive,
+  ExternalLink,
+  RefreshCcw,
+  Trash2,
+  BadgeCheck,
+} from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { UserListingSummary } from "@/lib/database-core";
 import type { ListingStatus } from "@/types";
@@ -32,13 +37,18 @@ function statusVariant(status: string) {
 }
 
 async function readError(response: Response, fallback: string) {
-  const body = (await response.json().catch(() => null)) as { error?: string } | null;
+  const body = (await response.json().catch(() => null)) as {
+    error?: string;
+  } | null;
 
   return body?.error || fallback;
 }
 
-export default function UserListingsClient({ listings }: { listings: UserListingSummary[] }) {
-  const router = useRouter();
+export default function UserListingsClient({
+  listings,
+}: {
+  listings: UserListingSummary[];
+}) {
   const [message, setMessage] = useState("");
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
@@ -57,13 +67,19 @@ export default function UserListingsClient({ listings }: { listings: UserListing
       });
 
       if (!response.ok) {
-        throw new Error(await readError(response, "Не вдалося оновити оголошення."));
+        throw new Error(
+          await readError(response, "Не вдалося оновити оголошення."),
+        );
       }
 
       setMessage("Оголошення оновлено.");
-      router.refresh();
+      window.location.reload();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Не вдалося оновити оголошення.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Не вдалося оновити оголошення.",
+      );
     } finally {
       setPendingAction(null);
     }
@@ -74,7 +90,8 @@ export default function UserListingsClient({ listings }: { listings: UserListing
       <div className="rounded-lg border border-dashed border-border bg-surface-subtle p-8 text-center">
         <h2 className="text-xl font-semibold">Оголошень ще немає</h2>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Після створення оголошення тут з’явиться його статус модерації та доступні дії.
+          Після створення оголошення тут з’явиться його статус модерації та
+          доступні дії.
         </p>
         <Link
           href="/market/new"
@@ -95,8 +112,11 @@ export default function UserListingsClient({ listings }: { listings: UserListing
       ) : null}
 
       {listings.map((listing) => {
-        const isPublic = listing.status === "active" && listing.moderationStatus === "approved";
-        const canArchive = listing.status === "active" || listing.status === "sold";
+        const isPublic =
+          listing.status === "active" &&
+          listing.moderationStatus === "approved";
+        const canArchive =
+          listing.status === "active" || listing.status === "sold";
         const canMarkSold = listing.status === "active";
         const canResubmit =
           listing.status === "archived" ||
@@ -104,7 +124,10 @@ export default function UserListingsClient({ listings }: { listings: UserListing
           listing.moderationStatus === "rejected";
 
         return (
-          <article key={listing.id} className="rounded-lg border border-border bg-surface p-5">
+          <article
+            key={listing.id}
+            className="rounded-lg border border-border bg-surface p-5"
+          >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -112,18 +135,28 @@ export default function UserListingsClient({ listings }: { listings: UserListing
                     {statusLabels[listing.status] || listing.status}
                   </Badge>
                   <Badge variant={statusVariant(listing.moderationStatus)}>
-                    {moderationLabels[listing.moderationStatus] || listing.moderationStatus}
+                    {moderationLabels[listing.moderationStatus] ||
+                      listing.moderationStatus}
                   </Badge>
                   <span className="text-xs font-semibold text-muted">
-                    {Number(listing.price).toLocaleString("uk-UA")} {listing.currency}
+                    {Number(listing.price).toLocaleString("uk-UA")}{" "}
+                    {listing.currency}
                   </span>
                 </div>
                 <h2 className="mt-3 text-xl font-semibold">{listing.title}</h2>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">{listing.description}</p>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+                  {listing.description}
+                </p>
                 <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold text-muted">
                   <span>Категорія: {listing.categoryId}</span>
-                  <span>Створено: {new Date(listing.createdAt).toLocaleDateString("uk-UA")}</span>
-                  <span>Активне до: {new Date(listing.expiresAt).toLocaleDateString("uk-UA")}</span>
+                  <span>
+                    Створено:{" "}
+                    {new Date(listing.createdAt).toLocaleDateString("uk-UA")}
+                  </span>
+                  <span>
+                    Активне до:{" "}
+                    {new Date(listing.expiresAt).toLocaleDateString("uk-UA")}
+                  </span>
                 </div>
                 {listing.moderationComment ? (
                   <p className="mt-3 rounded-md border border-accent/40 bg-accent-soft px-3 py-2 text-sm text-accent-strong">
