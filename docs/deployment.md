@@ -58,7 +58,11 @@ the database owner using a direct connection. Once all tables, indexes, and
 deployment still uses the database owner login for queries. The proposed next
 step is a separate Postgres login with only the table permissions the
 application requires; a reviewable, unapplied grant script is in
-`docs/runtime-grants.sql`. After approving and applying those grants, replace
+`docs/runtime-grants.sql`. Create this login with SQL and a strong secret
+outside Git: roles created through the Neon Console/API/CLI inherit
+`neon_superuser`, which defeats table-level limits. Verify its membership and
+role attributes before granting access. After approving and applying those
+grants, replace
 the server-only `DATABASE_URL` with the dedicated login's connection string.
 Keep the owner credential outside the request-serving environment after that
 switch. Review permissions when changing the schema; do not give the runtime
