@@ -1,97 +1,70 @@
-# Deployment
+# Production deployment
 
-## Vercel
+The public portal is hosted by Sites at
+`https://de-ternopil-portal.maksumlove29.chatgpt.site`. The custom hostname
+`deternopil.pp.ua` and its `www` alias are registered with the same Site.
+Publishing a code change requires pushing the Site source, saving its build
+archive as a version, and deploying that version. Changing runtime variables
+also requires redeploying a saved version.
 
-1. Підключити репозиторій до Vercel.
-2. Build command: `npm run build`.
-3. Output framework: Next.js.
-4. Додати Environment Variables з `.env.example`.
-5. Підключити Neon Postgres Store або іншу Postgres-базу і додати `DATABASE_URL`.
-6. Додати `ADMIN_EMAILS` для першого адміністратора.
-7. Підключити Resend або додати `RESEND_API_KEY` і `EMAIL_FROM` для підтвердження email та відновлення пароля.
+## Runtime configuration
 
-## Custom domain
+Configure the following in the Sites environment, marking credentials and
+administrator addresses as secrets:
 
-Production domain:
+| Key | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Neon Postgres connection string for the server only. |
+| `ADMIN_EMAILS` | Comma-separated bootstrap administrator email addresses. |
+| `RESEND_API_KEY` | Resend key restricted to sending from this domain. |
+| `EMAIL_FROM` | `Де Тернопіль <noreply@deternopil.pp.ua>`. |
+| `RESEND_EMAIL_DOMAIN` | `deternopil.pp.ua`. |
+| `NEXT_PUBLIC_SITE_URL` | Canonical HTTPS URL, used in email links and metadata. |
+| `NEXT_PUBLIC_SITE_DOMAIN_LABEL` | Public domain shown in the interface. |
+| `DATABASE_SCHEMA_MODE` | Set to `external` only after provisioning the complete schema and granting a dedicated runtime role its required table privileges. |
 
-```bash
-NEXT_PUBLIC_SITE_URL=https://deternopil.pp.ua
-NEXT_PUBLIC_SITE_DOMAIN_LABEL=deternopil.pp.ua
-```
+Do not put connection strings, API keys, or administrator email addresses in
+Git, `.openai/hosting.json`, or client-side variables.
 
-Domain is added to Vercel project `ternopil-city-portal` as:
+## DNS at NIC.UA
 
-- `deternopil.pp.ua`
-- `www.deternopil.pp.ua`
+The registrar must delegate `deternopil.pp.ua` to **NIC.UA nameservers** so the
+active DNS zone is used. The zone needs the following website records:
 
-NIC.UA registrar nameservers are configured for Vercel DNS:
+| Type | Name | Value |
+| --- | --- | --- |
+| A | `@` | `162.159.143.30` |
+| A | `@` | `172.66.3.26` |
+| CNAME | `www` | `custom-domains.chatgpt.site.` |
+| TXT | `_openai-site-verification` | Value from the Sites custom-domain settings for the apex. |
+| TXT | `_cf-custom-hostname` | Value from the Sites custom-domain settings for the apex. |
+| TXT | `_openai-site-verification.www` | Value from the Sites custom-domain settings for `www`. |
+| TXT | `_cf-custom-hostname.www` | Value from the Sites custom-domain settings for `www`. |
 
-- `ns1.vercel-dns.com`
-- `ns2.vercel-dns.com`
+The `resend._domainkey` TXT record, `send` MX record, and `send` TXT/SPF
+record supplied by Resend must remain in the same active zone. Preserve any
+unrelated inbound mail records. The apex also publishes `_dmarc` TXT
+`v=DMARC1; p=none; pct=100` while mail authentication is monitored. After DNS
+and TLS validation finish, set
+`NEXT_PUBLIC_SITE_URL=https://deternopil.pp.ua` and
+`NEXT_PUBLIC_SITE_DOMAIN_LABEL=deternopil.pp.ua`, then redeploy.
 
-Vercel DNS contains the website ALIAS records, Resend email records and DMARC:
+## Database permissions
 
-- `_dmarc.deternopil.pp.ua` TXT `v=DMARC1; p=none; pct=100`
+`lib/database-core.ts` can bootstrap an empty local database when
+`DATABASE_SCHEMA_MODE` is unset. For production, apply schema migrations with
+the database owner using a direct connection. Once all tables, indexes, and
+`auth_rate_limits` exist, use a separate Postgres login with only the table
+permissions the application requires. Then set `DATABASE_SCHEMA_MODE=external`
+and replace the server-only `DATABASE_URL` with that login's connection string.
+Keep the owner credential outside the request-serving environment. Review and
+apply grants explicitly when changing the schema; do not give the runtime
+role schema ownership or blanket privileges on future tables.
 
-Resend domain `deternopil.pp.ua` is verified.
+## Release checks
 
-Мінімум для server-side доступу до `/admin`:
-
-- `DATABASE_URL`
-- `ADMIN_EMAILS`
-- `RESEND_API_KEY`
-- `EMAIL_FROM`
-- `RESEND_EMAIL_DOMAIN`
-
-## Resend email
-
-Resend Marketplace integration for this project:
-
-```bash
-npx vercel integration add resend --name ternopil-city-portal-email --plan free -m domain=deternopil.pp.ua -m region=eu-west-1 -e production -e preview -e development --scope de-te --json
-```
-
-Current sender:
-
-```bash
-EMAIL_FROM="Де Тернопіль <noreply@deternopil.pp.ua>"
-RESEND_EMAIL_DOMAIN=deternopil.pp.ua
-```
-
-DNS records required for `deternopil.pp.ua`:
-
-| Type | Name                | Value                                                                                                                                                                                                                        | Priority |
-| ---- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| TXT  | `resend._domainkey` | `p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDavKjMdEh3OlMyh8sw55sZA++fmQNS6kwvve4+SZuZyngnZg7SBh+DMSya921X9pVyw9lEL84R+Kmye9Yq8Up8wHBQ0USCEt1uIuSma/COqF8xDRV0lFABo33acoiGmvKKQEtcRyaWWEOMrODIhI67+3ZeEYNetZPizGkc0d1T/wIDAQAB` |          |
-| MX   | `send`              | `feedback-smtp.eu-west-1.amazonses.com`                                                                                                                                                                                      | `10`     |
-| TXT  | `send`              | `v=spf1 include:amazonses.com ~all`                                                                                                                                                                                          |          |
-
-Без `DATABASE_URL` сторінка `/admin` залишається закритою і показує повідомлення про відсутню базу даних. Публічні сторінки все одно збираються та відкриваються зі static seed data.
-
-## Vercel Stores
-
-Рекомендована команда після прийняття Neon Marketplace terms:
-
-```bash
-npx vercel integration add neon --name ternopil-city-portal-db --plan free_v3 -m region=fra1 -m auth=false -e production -e preview -e development --scope de-te --json
-```
-
-Після створення Store:
-
-```bash
-npx vercel env pull .env.local --yes --scope de-te
-npm run seed
-npx vercel --prod --scope de-te
-```
-
-## Перед релізом
-
-```bash
-npm run format:check
-npm run lint
-npm run build
-npm test
-npm audit --omit=dev
-```
-
-Auth/private сторінки закриті від індексації через metadata та `robots.ts`. Публічні detail pages входять у `sitemap.ts`.
+Run `npm test`, `npm run lint`, and `npm run build`; verify the public routes,
+registration and email verification, login, password reset, and denied access
+to `/admin` and protected APIs without an administrator session. Check Sites
+worker logs after deployment. Existing expired or unpublished listings are
+intentionally absent from the public marketplace.
