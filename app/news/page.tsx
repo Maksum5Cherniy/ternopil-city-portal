@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import { ModulePage } from "@/components/content/ModulePage";
 import { newsItems } from "@/constants/content";
-import { getPublishedAdminPortalEntities, mergePortalEntities } from "@/lib/public-content";
+import {
+  getPublishedAdminPortalEntities,
+  mergePortalEntities,
+} from "@/lib/public-content";
 
 export const metadata: Metadata = {
   title: "Новини Тернополя",
-  description: "Останні новини, міські оновлення, добірки та важливі матеріали Тернополя.",
+  description:
+    "Останні новини, міські оновлення, добірки та важливі матеріали Тернополя.",
 };
 
 export const dynamic = "force-dynamic";
@@ -17,12 +21,8 @@ export default async function NewsPage() {
   return (
     <ModulePage
       eyebrow="Новини"
-      title={adminNewsItems.length ? "Новини Тернополя" : "Архів новин"}
-      description={
-        adminNewsItems.length
-          ? "Редакційні матеріали та міські оновлення Тернополя."
-          : "Матеріали попередніх місяців. Перевіряйте дату публікації та першоджерело перед використанням інформації."
-      }
+      title="Новини Тернополя"
+      description="Міські повідомлення з датою та посиланням на першоджерело. Перевіряйте актуальність перед плануванням."
       items={items}
     />
   );
