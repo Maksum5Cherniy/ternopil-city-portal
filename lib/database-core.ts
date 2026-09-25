@@ -380,6 +380,12 @@ export async function ensureDatabaseSchema() {
     throw new DatabaseNotConfiguredError();
   }
 
+  // Production schema changes are applied separately using the database owner.
+  // The request-serving role needs only DML privileges on existing tables.
+  if (process.env.DATABASE_SCHEMA_MODE === "external") {
+    return;
+  }
+
   if (!schemaReady) {
     schemaReady = createSchema().catch((error) => {
       schemaReady = null;
