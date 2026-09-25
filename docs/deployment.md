@@ -54,19 +54,24 @@ and TLS validation finish, set
 `lib/database-core.ts` can bootstrap an empty local database when
 `DATABASE_SCHEMA_MODE` is unset. For production, apply schema migrations with
 the database owner using a direct connection. Once all tables, indexes, and
-`auth_rate_limits` exist, set `DATABASE_SCHEMA_MODE=external`. The current
-deployment still uses the database owner login for queries. The proposed next
-step is a separate Postgres login with only the table permissions the
-application requires; a reviewable, unapplied grant script is in
-`docs/runtime-grants.sql`. Create this login with SQL and a strong secret
-outside Git: roles created through the Neon Console/API/CLI inherit
-`neon_superuser`, which defeats table-level limits. Verify its membership and
-role attributes before granting access. After approving and applying those
-grants, replace
-the server-only `DATABASE_URL` with the dedicated login's connection string.
-Keep the owner credential outside the request-serving environment after that
-switch. Review permissions when changing the schema; do not give the runtime
-role schema ownership or blanket privileges on future tables.
+`auth_rate_limits` exist, set `DATABASE_SCHEMA_MODE=external`. Production uses
+the SQL-created `deternopil_runtime` login for requests. The precise grants in
+`docs/runtime-grants.sql` have been applied. This login has no membership in
+`neon_superuser`, `CREATEDB`, `CREATEROLE`, schema `CREATE`, or rights to
+future tables by default. Keep its password only in the secret server-side
+`DATABASE_URL`; retain the owner login outside the request-serving environment.
+Neon Console/API/CLI-created roles inherit `neon_superuser`, so create any
+replacement runtime login with SQL and verify its attributes before granting
+table permissions. Review permissions when the schema changes.
+
+## Editorial updates
+
+The bundled news, venues and events are concise, sourced starting content.
+Use the admin panel's **Events** section to enter a title, description, start
+and optional end date, location, cost and an HTTPS source URL. A published
+event must have its date and source. After its end date it leaves the upcoming
+list automatically and stays available in the event archive. Keep source pages
+and venue details current; do not publish sample listings as real offers.
 
 ## Release checks
 
