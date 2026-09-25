@@ -1,7 +1,6 @@
 "use client";
 
 import { Heart } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   favoriteStorageKey,
@@ -38,7 +37,6 @@ function writeFavorites(userId: string, items: SavedFavorite[]) {
 }
 
 export default function FavoriteButton({ item }: FavoriteButtonProps) {
-  const router = useRouter();
   const [isSaved, setIsSaved] = useState(false);
   const [userId, setUserId] = useState<string | null | undefined>(undefined);
 
@@ -82,7 +80,12 @@ export default function FavoriteButton({ item }: FavoriteButtonProps) {
       className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border bg-surface px-4 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       onClick={() => {
         if (!userId) {
-          router.push(`/login?next=${encodeURIComponent(item.href)}`);
+          window.location.assign(
+            new URL(
+              `/login?next=${encodeURIComponent(item.href)}`,
+              window.location.origin,
+            ).href,
+          );
           return;
         }
 
