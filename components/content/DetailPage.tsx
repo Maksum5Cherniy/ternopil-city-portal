@@ -12,7 +12,8 @@ import {
 import FavoriteButton from "@/components/content/FavoriteButton";
 import { Badge } from "@/components/ui/Badge";
 import { LinkButton } from "@/components/ui/Button";
-import type { PortalEntity } from "@/constants/content";
+import { SITE } from "@/config/site.config";
+import { getCityDate, type PortalEntity } from "@/constants/content";
 
 function cleanHandle(value?: string) {
   return value?.trim().replace(/^@/, "");
@@ -41,17 +42,27 @@ export function DetailPage({
     "@type": schemaType,
     name: item.title,
     description: item.description,
-    url: item.href,
-    ...(item.date ? { startDate: item.date } : {}),
-    ...(item.address ? { address: item.address } : {}),
-    ...(item.price ? { offers: { "@type": "Offer", price: item.price } } : {}),
+    url: item.href.startsWith("/") ? `${SITE.url}${item.href}` : item.href,
+    ...(schemaType === "Event" && item.date
+      ? { startDate: item.date, endDate: item.endDate || item.date }
+      : {}),
+    ...(schemaType === "Article" && item.date
+      ? { datePublished: item.date }
+      : {}),
+    ...(schemaType === "Event" && item.address
+      ? { location: { "@type": "Place", name: item.address } }
+      : item.address
+        ? { address: item.address }
+        : {}),
   };
 
   return (
     <article className="mx-auto w-full max-w-[920px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <Link
         href={backHref}
@@ -63,19 +74,29 @@ export function DetailPage({
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
         <Badge variant="primary">{item.meta || item.category}</Badge>
+        {schemaType === "Event" &&
+        (item.endDate || item.date || "") < getCityDate() ? (
+          <Badge variant="neutral">Подія завершилася</Badge>
+        ) : null}
         {item.status ? (
-          <Badge variant={item.status === "sold" ? "accent" : "neutral"}>{item.status}</Badge>
+          <Badge variant={item.status === "sold" ? "accent" : "neutral"}>
+            {item.status}
+          </Badge>
         ) : null}
       </div>
 
-      <h1 className="mt-5 text-3xl font-semibold tracking-normal sm:text-5xl">{item.title}</h1>
+      <h1 className="mt-5 text-3xl font-semibold tracking-normal sm:text-5xl">
+        {item.title}
+      </h1>
       <p className="mt-5 text-lg leading-8 text-muted">{item.description}</p>
 
       <div className="mt-6 grid gap-3 rounded-lg border border-border bg-surface p-4 text-sm text-muted sm:grid-cols-3">
         {item.date ? (
           <div className="flex items-center gap-2">
             <CalendarDays aria-hidden size={18} className="text-primary" />
-            <span>{item.date}</span>
+            <span>
+              {item.endDate ? `${item.date} — ${item.endDate}` : item.date}
+            </span>
           </div>
         ) : null}
         {item.address ? (
@@ -90,7 +111,9 @@ export function DetailPage({
             <span>{item.rating.toFixed(1)}</span>
           </div>
         ) : null}
-        {item.price ? <div className="font-semibold text-foreground">{item.price}</div> : null}
+        {item.price ? (
+          <div className="font-semibold text-foreground">{item.price}</div>
+        ) : null}
         {item.condition ? (
           <div className="font-semibold text-foreground">{item.condition}</div>
         ) : null}
@@ -98,15 +121,17 @@ export function DetailPage({
 
       <div className="mt-8 rounded-lg border border-border bg-surface p-6">
         <h2 className="text-xl font-semibold">Опис</h2>
-        <p className="mt-3 whitespace-pre-line text-base leading-8 text-muted">{item.content}</p>
+        <p className="mt-3 whitespace-pre-line text-base leading-8 text-muted">
+          {item.content}
+        </p>
       </div>
 
       <div className="mt-6 grid gap-4 rounded-lg border border-border bg-surface-subtle p-6 md:grid-cols-2">
         <div>
           <h2 className="font-semibold">Доступні дії</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Додати в обране, поскаржитися, перейти до маршруту або зв&apos;язатися через вказані
-            контакти.
+            Збережіть матеріал або скористайтеся доступними посиланнями й
+            контактами.
           </p>
           <div className="mt-4">
             <FavoriteButton
@@ -171,7 +196,8 @@ export function DetailPage({
         <div>
           <h2 className="font-semibold">Модерація</h2>
           <p className="mt-2 text-sm leading-6 text-muted">
-            Зміни й користувацький контент проходять перевірку перед публікацією.
+            Зміни й користувацький контент проходять перевірку перед
+            публікацією.
           </p>
         </div>
       </div>
