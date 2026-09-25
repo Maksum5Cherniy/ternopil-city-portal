@@ -12,13 +12,21 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-function BlockedListingState({ title, description }: { title: string; description: string }) {
+function BlockedListingState({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
   return (
     <section className="mx-auto grid w-full max-w-[960px] gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[0.75fr_1.25fr] lg:px-8">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal sm:text-5xl">Додати оголошення</h1>
+        <h1 className="text-3xl font-semibold tracking-normal sm:text-5xl">
+          Додати оголошення
+        </h1>
         <p className="mt-4 text-base leading-8 text-muted">
-          Оголошення потрапляє на модерацію, має обмеження фото, строк активності, статуси та
+          Оголошення потрапляє на модерацію, має строк активності, статуси та
           контакти без внутрішнього чату.
         </p>
       </div>
@@ -77,9 +85,11 @@ export default async function NewListingPage() {
   return (
     <section className="mx-auto grid w-full max-w-[960px] gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[0.75fr_1.25fr] lg:px-8">
       <div>
-        <h1 className="text-3xl font-semibold tracking-normal sm:text-5xl">Додати оголошення</h1>
+        <h1 className="text-3xl font-semibold tracking-normal sm:text-5xl">
+          Додати оголошення
+        </h1>
         <p className="mt-4 text-base leading-8 text-muted">
-          Оголошення потрапляє на модерацію, має обмеження фото, строк активності, статуси та
+          Оголошення потрапляє на модерацію, має строк активності, статуси та
           контакти без внутрішнього чату.
         </p>
       </div>
