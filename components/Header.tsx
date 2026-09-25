@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, Plus, Search, ShieldCheck, UserRound, X } from "lucide-react";
+import { Menu, Plus, Search, UserRound, X } from "lucide-react";
 import Logo from "@/components/Logo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { uk } from "@/config/dictionaries/uk";
@@ -34,7 +34,11 @@ export default function Header() {
 
           <nav className="hidden items-center gap-5 md:flex">
             {uk.navigation.primary.map((item) => (
-              <Link key={item.href} href={item.href} className={navLinkClass(item.href)}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={navLinkClass(item.href)}
+              >
                 {item.label}
               </Link>
             ))}
@@ -47,13 +51,6 @@ export default function Header() {
               className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-primary transition hover:border-info hover:text-info focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <Search aria-hidden size={18} />
-            </Link>
-            <Link
-              href="/admin"
-              aria-label={uk.common.admin}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-primary transition hover:border-info hover:text-info focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-            >
-              <ShieldCheck aria-hidden size={18} />
             </Link>
             <Link
               href="/profile"
@@ -81,7 +78,11 @@ export default function Header() {
               onClick={() => setOpen(!open)}
               className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-primary transition hover:border-info hover:text-info focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              {open ? <X aria-hidden size={20} /> : <Menu aria-hidden size={20} />}
+              {open ? (
+                <X aria-hidden size={20} />
+              ) : (
+                <Menu aria-hidden size={20} />
+              )}
             </button>
           </div>
         </div>
@@ -121,14 +122,6 @@ export default function Header() {
               >
                 <UserRound aria-hidden size={17} />
                 <span>{uk.common.profile}</span>
-              </Link>
-              <Link
-                href="/admin"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border bg-surface px-3 text-sm font-semibold"
-                onClick={() => setOpen(false)}
-              >
-                <ShieldCheck aria-hidden size={17} />
-                <span>{uk.common.admin}</span>
               </Link>
               <Link
                 href="/market/new"
