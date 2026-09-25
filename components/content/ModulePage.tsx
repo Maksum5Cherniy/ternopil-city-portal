@@ -8,7 +8,7 @@ export function ModulePage({
   title,
   description,
   items,
-  emptyText = "Матеріали з'являться після підключення бази даних.",
+  emptyText = "У цьому розділі поки немає опублікованих матеріалів.",
 }: {
   eyebrow: string;
   title: string;
@@ -20,8 +20,12 @@ export function ModulePage({
     <section className="mx-auto w-full max-w-[1180px] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
       <div className="max-w-3xl">
         <Badge variant="primary">{eyebrow}</Badge>
-        <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-5xl">{title}</h1>
-        <p className="mt-4 text-base leading-8 text-muted sm:text-lg">{description}</p>
+        <h1 className="mt-4 text-3xl font-semibold tracking-normal sm:text-5xl">
+          {title}
+        </h1>
+        <p className="mt-4 text-base leading-8 text-muted sm:text-lg">
+          {description}
+        </p>
       </div>
 
       {items.length > 0 ? (
@@ -33,13 +37,21 @@ export function ModulePage({
               className="group rounded-lg border border-border bg-surface p-5 transition hover:border-primary hover:shadow-[var(--shadow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               <div className="flex flex-wrap items-center gap-2">
-                {item.badge ? <Badge variant="accent">{item.badge}</Badge> : null}
+                {item.badge ? (
+                  <Badge variant="accent">{item.badge}</Badge>
+                ) : null}
                 {item.meta ? (
-                  <span className="text-xs font-semibold text-muted">{item.meta}</span>
+                  <span className="text-xs font-semibold text-muted">
+                    {item.meta}
+                  </span>
                 ) : null}
               </div>
-              <h2 className="mt-3 text-lg font-semibold group-hover:text-primary">{item.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-muted">{item.description}</p>
+              <h2 className="mt-3 text-lg font-semibold group-hover:text-primary">
+                {item.title}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {item.description}
+              </p>
               <span className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary">
                 Детальніше
                 <ArrowRight aria-hidden size={16} />
